@@ -1,0 +1,8 @@
+RobotBase wall_e
+//BASIC                          
+motorleft  = Motor  [ gpiomotor pincw 8 pinccw 9 ]   position: LEFT
+motorright = Motor  [ gpiomotor pincw 12 pinccw 13 ]  position: RIGHT
+//COMPOSED 
+motors = Actuators [ motorleft , motorright ] private position: BOTTOM
+Mainrobot mynanolego [ motors ]    
+;

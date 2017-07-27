@@ -1,0 +1,13 @@
+%====================================================================================
+% Context ctxRobot  SYSTEM-configuration: file it.unibo.ctxRobot.rover.pl 
+%====================================================================================
+context(ctxrobot, "localhost",  "TCP", "8070" ).  		 
+context(ctxsonar, "192.168.0.5",  "TCP", "8090" ).  		 
+%%% -------------------------------------------
+qactor( sonar , ctxsonar, "it.unibo.sonar.MsgHandle_Sonar"   ). %%store msgs 
+qactor( sonar_ctrl , ctxsonar, "it.unibo.sonar.Sonar"   ). %%control-driven 
+%%% -------------------------------------------
+%%% -------------------------------------------
+qactor( rover , ctxrobot, "it.unibo.rover.MsgHandle_Rover" ). 
+qactor( rover_ctrl , ctxrobot, "it.unibo.rover.Rover" ). 
+
