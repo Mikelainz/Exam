@@ -10,7 +10,7 @@ public class Rover extends AbstractRover {
 	}
 	
 	public void createRobotUnity() {
-		createSimulatedActor(getName().replace("_ctrl",""), "Prefabs/CustomActor", (float)-33.7, 0, 10, 0, 0, 0, 0);
+		createSimulatedActor("Prefabs/CustomActor", (float)-33.7, 0, 10, 0, 0, 0, 0);
 	}
 	
 }

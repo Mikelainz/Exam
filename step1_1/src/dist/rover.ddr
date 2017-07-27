@@ -12,8 +12,8 @@ Robot wall_e QActor rover context ctxRobot {
   			//Metodo 1 unity
   			//actorOp workWithUnity("127.0.0.1");//connects to port 6000 192.168.43.229"
 			//Metodo 2 unity
-//			actorOp initUnityConnection("192.168.0.3");
-//			actorOp createRobotUnity; 
+			actorOp initUnityConnection("192.168.0.3");
+			actorOp createRobotUnity;
 			//---------UNITY----------
       		switchToPlan handlecommands;  
 			delay time(6000000); 
@@ -28,12 +28,9 @@ Robot wall_e QActor rover context ctxRobot {
 	Plan execRobotCommand resumeLastPlan   
 		printCurrentEvent;	
   		//execCmdGui is defined in RobotActor, CmdUilInterpreter 
-  		println("CESCOCESCO1111");
    		onEvent usercmd : usercmd(CMD) ->  //actorOp execCmdGui(CMD)
    			println(printingTheCommandInQActorWall_e(CMD)) ;
    		onEvent usercmd : usercmd(CMD) ->
-   			robotRight speed(100) time(5000);
-   		println("CESCOCESCO2222")
-	
+   			robotRight speed(100) time(5000)
 }
  

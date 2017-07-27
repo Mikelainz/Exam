@@ -83,6 +83,24 @@ protected IActorAction  action;
     	nPlanIter++;
     		temporaryStr = "\"Rover STARTS\"";
     		println( temporaryStr );  
+    		parg = "actorOp(initUnityConnection(\"192.168.0.3\"))";
+    		aar = solveGoalReactive(parg,3600000,"","");
+    		//println(getName() + " plan " + curPlanInExec  +  " interrupted=" + aar.getInterrupted() + " action goon="+aar.getGoon());
+    		if( aar.getInterrupted() ){
+    			curPlanInExec   = "init";
+    			if( aar.getTimeRemained() <= 0 ) addRule("tout(actorOp,"+getName()+")");
+    			if( ! aar.getGoon() ) break;
+    		} 			
+    		//QActorUtils.solveGoal(parg,pengine );
+    		parg = "actorOp(createRobotUnity)";
+    		aar = solveGoalReactive(parg,3600000,"","");
+    		//println(getName() + " plan " + curPlanInExec  +  " interrupted=" + aar.getInterrupted() + " action goon="+aar.getGoon());
+    		if( aar.getInterrupted() ){
+    			curPlanInExec   = "init";
+    			if( aar.getTimeRemained() <= 0 ) addRule("tout(actorOp,"+getName()+")");
+    			if( ! aar.getGoon() ) break;
+    		} 			
+    		//QActorUtils.solveGoal(parg,pengine );
     		if( ! planUtils.switchToPlan("handlecommands").getGoon() ) break;
     		//delay
     		aar = delayReactive(6000000,"" , "");
@@ -135,8 +153,6 @@ protected IActorAction  action;
     	curPlanInExec =  "execRobotCommand";	//within while since it can be lost by switchlan
     	nPlanIter++;
     		printCurrentEvent(false);
-    		temporaryStr = "\"CESCOCESCO1111\"";
-    		println( temporaryStr );  
     		//onEvent
     		if( currentEvent.getEventId().equals("usercmd") ){
     		 		String parg = "printingTheCommandInQActorWall_e(CMD)";
@@ -156,8 +172,6 @@ protected IActorAction  action;
     		 		    	if( ! aar.getGoon() ) break;
     		 		    } 			
     		 }
-    		temporaryStr = "\"CESCOCESCO2222\"";
-    		println( temporaryStr );  
     		returnValue = continueWork;  
     break;
     }//while
