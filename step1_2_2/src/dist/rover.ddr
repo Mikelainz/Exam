@@ -17,8 +17,8 @@ QActor sonar2 context ctxSonarEnv {
 		switchToPlan work;
 		println("sonar ENDS")
 		
-	Plan work
-		delay time(1000);
+	Plan work 
+		delay time(50);
 		actorOp getDistanceFromSonar;
 		[ !? testNear(Distance) ] emit sonar:sonar(sonar2, wall_e, Distance);
 		repeatPlan
