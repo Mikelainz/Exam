@@ -6,8 +6,8 @@ Event obstacle : obstacle(DISTANCE)
 Event noMoreObstacle : noMoreObstacle(DISTANCE)  
 
 
-Context  ctxRobot  ip [ host="localhost" port=8070 ] -httpserver
-Context  ctxSonarEnv  ip [ host="192.168.0.4" port=8090 ]  
+Context  ctxRobot  ip [ host="192.168.0.3" port=8070 ] -httpserver
+Context  ctxSonarEnv  ip [ host="localhost" port=8090 ]  
  
 QActor sonar2 context ctxSonarEnv {
 	Rules {
@@ -80,10 +80,19 @@ Robot wall_e QActor rover context ctxRobot {
    			[ !? rotationTime(T) ] robotRight speed(100) time(T);
    			resumeLastPlan
    			
+   	Plan turnLeft90
+   			[ !? rotationTime(T) ] robotLeft speed(100) time(T);
+   			resumeLastPlan
+   			
    	Plan fixedObstacle
    			println("Aye man wake up, it's steady this fcking bastard!!");
+	   		switchToPlan findTheDoor
+	   		
+   	Plan findTheDoor
    			switchToPlan turnRight90;
-	   		switchToPlan goForward
-   			
-   			 			
+   			robotForward speed(100) time(1500);
+   			switchToPlan turnLeft90;
+   			sense time (500) obstacle -> handleObstacle;
+   			switchToPlan goForward
+   			   			 			
 }

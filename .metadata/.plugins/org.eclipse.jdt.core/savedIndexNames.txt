@@ -10,4 +10,3 @@ INDEX VERSION 1.129+C:\Users\Mattia\Desktop\Esame\.metadata\.plugins\org.eclipse
 4257325822.index
 2576536167.index
 2540300904.index
-3716473674.index
