@@ -1,0 +1,91 @@
+RobotSystem rover_wall_e_sys
+                     
+Event usercmd : usercmd(robotgui(CMD)) 	//(FORWARD button) CMD w(low)
+Event sonar : sonar(SONARID,TARGETNAME,DISTANCE) //EVENT ENVIRONMENT SONAR1&2
+Event obstacle : obstacle(DISTANCE)      
+Event noMoreObstacle : noMoreObstacle(DISTANCE)  
+
+
+Context  ctxRobot  ip [ host="localhost" port=8070 ] -httpserver
+Context  ctxSonarEnv  ip [ host="192.168.0.4" port=8090 ]  
+ 
+QActor sonar2 context ctxSonarEnv {
+	Rules {
+		testNear(Distance):-retract(actorOpDone(OP, Distance)), eval(lt, Distance, 90).
+	}
+	
+	Plan init normal
+			println("sonar STARTS");
+			actorOp startSonarProcess;
+			switchToPlan work;
+			println("sonar ENDS")
+			
+	Plan work 
+			delay time(50);
+			actorOp getDistanceFromSonar;
+			[ !? testNear(Distance) ] emit sonar:sonar(sonar2, wall_e, Distance);
+			repeatPlan
+}
+
+Robot wall_e QActor rover context ctxRobot {     
+	
+	Plan init normal 
+ 			println("Rover STARTS");           
+  			//---------UNITY----------
+  			//Metodo 1 unity
+  			//actorOp workWithUnity("127.0.0.1");//connects to port 6000 192.168.43.229"
+			//Metodo 2 unity
+			//actorOp initUnityConnection("192.168.0.3");
+			//actorOp createRobotUnity;
+			//---------UNITY----------
+			actorOp getRotationTime;
+			[ ?? actorOpDone(OP, RotationTime) ] addRule rotationTime(RotationTime);
+      		switchToPlan handlecommands;  
+			delay time(6000000); 
+   			println("rover ENDS")                      
+
+	Plan handlecommands  
+			println("rover waits for user commands");    
+	/*R2*/ 	sense time(10000) usercmd -> execRobotCommand ;
+			repeatPlan 	
+
+	//BUTTON (Forward, Backward, etc) : usercmd("w(low)")
+	Plan execRobotCommand resumeLastPlan   
+			printCurrentEvent;	
+	  		//execCmdGui is defined in RobotActor, CmdUilInterpreter 
+	   		onEvent usercmd : usercmd(CMD) ->  //actorOp execCmdGui(CMD)
+	   			println(printingTheCommandInQActorWall_e(CMD)) ;
+	   		onEvent usercmd : usercmd(CMD) -> switchToPlan goForward
+	   			
+   	Plan goForward 
+   			robotForward speed(100) time(60000) react event sonar -> handleSonarEnv 
+	   										or    event obstacle -> handleObstacle
+   			
+   	Plan handleSonarEnv 
+   			onEvent sonar : sonar(sonar2,wall_e,D) -> robotStop speed(0) time(0);
+   			onEvent sonar : sonar(sonar2,wall_e,D) -> switchToPlan handlecommands
+   			
+   	Plan handleObstacle
+   			onEvent obstacle : obstacle(DISTANCE) -> robotStop speed(0) time(0);
+   			switchToPlan typeOfObstacle
+   			
+   	Plan typeOfObstacle
+   			sense time (2500) noMoreObstacle -> mobileObstacle;
+   			switchToPlan fixedObstacle
+   			
+   	Plan mobileObstacle
+   			switchToPlan goForward	
+   			
+   	Plan turnRight90
+   			[ !? rotationTime(T) ] robotRight speed(100) time(T);
+   			resumeLastPlan
+   			
+   	Plan fixedObstacle
+   			println("Aye man wake up, it's steady this fcking bastard!!");
+   			switchToPlan turnRight90;
+	   		switchToPlan goForward
+   			
+   			
+   			
+   			
+}
