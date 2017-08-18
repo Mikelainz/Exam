@@ -1,7 +1,7 @@
 %====================================================================================
 % Context ctxSonarEnv  SYSTEM-configuration: file it.unibo.ctxSonarEnv.rover_wall_e_sys.pl 
 %====================================================================================
-context(ctxrobot, "192.168.0.4",  "TCP", "8070" ).  		 
+context(ctxrobot, "192.168.0.3",  "TCP", "8070" ).  		 
 context(ctxsonarenv, "localhost",  "TCP", "8090" ).  		 
 %%% -------------------------------------------
 qactor( sonar2 , ctxsonarenv, "it.unibo.sonar2.MsgHandle_Sonar2"   ). %%store msgs 

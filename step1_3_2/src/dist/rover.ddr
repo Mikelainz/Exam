@@ -4,7 +4,7 @@ Event usercmd : usercmd(robotgui(CMD)) 	//(FORWARD button) CMD w(low)
 Event sonar : sonar(SONARID,TARGETNAME,DISTANCE) //EVENT ENVIRONMENT SONAR1&2
 Event obstacle : obstacle(DISTANCE)      
 
-Context  ctxRobot  ip [ host="192.168.0.4" port=8070 ] -httpserver
+Context  ctxRobot  ip [ host="192.168.0.3" port=8070 ] -httpserver
 Context  ctxSonarEnv  ip [ host="localhost" port=8090 ]  
  
 QActor sonar2 context ctxSonarEnv {
@@ -13,16 +13,16 @@ QActor sonar2 context ctxSonarEnv {
 	}
 	
 	Plan init normal
-		println("sonar STARTS");
-		actorOp startSonarProcess;
-		switchToPlan work;
-		println("sonar ENDS")
-		
+			println("sonar STARTS");
+			actorOp startSonarProcess;
+			switchToPlan work;
+			println("sonar ENDS")
+			
 	Plan work 
-		delay time(50);
-		actorOp getDistanceFromSonar;
-		[ !? testNear(Distance) ] emit sonar:sonar(sonar2, wall_e, Distance);
-		repeatPlan
+			delay time(50);
+			actorOp getDistanceFromSonar;
+			[ !? testNear(Distance) ] emit sonar:sonar(sonar2, wall_e, Distance);
+			repeatPlan
 }
 
 Robot wall_e QActor rover context ctxRobot {     
@@ -51,9 +51,11 @@ Robot wall_e QActor rover context ctxRobot {
 	  		//execCmdGui is defined in RobotActor, CmdUilInterpreter 
 	   		onEvent usercmd : usercmd(CMD) ->  //actorOp execCmdGui(CMD)
 	   			println(printingTheCommandInQActorWall_e(CMD)) ;
-	   		onEvent usercmd : usercmd(CMD) ->
-	   			robotForward speed(100) time(60000) react event sonar -> handleSonarEnv 
-	   												or    event obstacle -> handleObstacle
+	   		onEvent usercmd : usercmd(CMD) -> switchToPlan goForward
+	   			
+   	Plan goForward 
+   			robotForward speed(100) time(60000) react event sonar -> handleSonarEnv 
+	   										or    event obstacle -> handleObstacle
    			
    	Plan handleSonarEnv 
    			onEvent sonar : sonar(sonar2,wall_e,D) -> robotStop speed(0) time(0);
@@ -61,9 +63,11 @@ Robot wall_e QActor rover context ctxRobot {
    			
    	Plan handleObstacle
    			onEvent obstacle : obstacle(DISTANCE) -> robotStop speed(0) time(0);
-   			switchToPlan handlecommands
+   			switchToPlan mobileObstacle
    			
-   		
+   	Plan mobileObstacle
+   			sense time (1000) obstacle -> mobileObstacle;
+   			switchToPlan goForward	
    			
    			
 }
