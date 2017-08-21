@@ -1,0 +1,2 @@
+rotationTime: 300
+obstacleDistance: 30
