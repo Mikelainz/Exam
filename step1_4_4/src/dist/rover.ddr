@@ -38,11 +38,21 @@ Robot wall_e QActor rover context ctxRobot {
 			//actorOp initUnityConnection("192.168.0.3");
 			//actorOp createRobotUnity;
 			//---------UNITY----------
-			actorOp getRotationTime;
-			[ ?? actorOpDone(OP, RotationTime) ] addRule rotationTime(RotationTime);
+			switchToPlan config;
       		switchToPlan handlecommands;  
 			delay time(6000000); 
    			println("rover ENDS")                      
+
+	Plan config
+			actorOp getRotationTimeRight;
+			[ ?? actorOpDone(OP, RTR) ] addRule rotationTimeRight(RTR);
+			actorOp getRotationTimeLeft;
+			[ ?? actorOpDone(OP, RTL) ] addRule rotationTimeLeft(RTL);
+			actorOp getSearchTimeForward;
+			[ ?? actorOpDone(OP, STF) ] addRule searchTimeForward(STF);
+			actorOp getSenseTimeFixedObstacle;
+			[ ?? actorOpDone(OP, STFO) ] addRule senseTimeFixedObstacle(STFO);
+			resumeLastPlan
 
 	Plan handlecommands  
 			println("rover waits for user commands");    
@@ -71,18 +81,18 @@ Robot wall_e QActor rover context ctxRobot {
    			switchToPlan typeOfObstacle
    			
    	Plan typeOfObstacle
-   			sense time (2500) noMoreObstacle -> mobileObstacle;
+   			[ !? senseTimeFixedObstacle(T) ] sense time (T) noMoreObstacle -> mobileObstacle;
    			switchToPlan fixedObstacle
    			
    	Plan mobileObstacle
    			switchToPlan goForward	
    			
    	Plan turnRight90
-   			[ !? rotationTime(T) ] robotRight speed(100) time(T);
+   			[ !? rotationTimeRight(T) ] robotRight speed(100) time(T);
    			resumeLastPlan
    			
    	Plan turnLeft90
-   			[ !? rotationTime(T) ] robotLeft speed(100) time(T);
+   			[ !? rotationTimeLeft(T) ] robotLeft speed(100) time(T);
    			resumeLastPlan
    			
    	Plan fixedObstacle
@@ -92,14 +102,14 @@ Robot wall_e QActor rover context ctxRobot {
 	   		
    	Plan findTheDoorRight
    			switchToPlan turnRight90;
-   			robotForward speed(100) time(1500) react event obstacle -> deadEndRight;
+   			[ !? searchTimeForward(T) ] robotForward speed(100) time(T) react event obstacle -> deadEndRight;
    			switchToPlan turnLeft90;
    			sense time (500) obstacle -> handleObstacle;
    			switchToPlan goForward
    			
    	Plan findTheDoorLeft
    	   		switchToPlan turnLeft90;
-   			robotForward speed(100) time(1500) react event obstacle -> deadEndLeft;
+   			[ !? searchTimeForward(T) ] robotForward speed(100) time(T) react event obstacle -> deadEndLeft;
    			switchToPlan turnRight90;
    			sense time (500) obstacle -> handleObstacle;
    			switchToPlan goForward
@@ -107,6 +117,7 @@ Robot wall_e QActor rover context ctxRobot {
    	Plan deadEndRight
    			addRule goLeft;
    			switchToPlan turnLeft90;
+   			delay time(1000);
    			switchToPlan findTheDoorLeft
    			
    	Plan deadEndLeft

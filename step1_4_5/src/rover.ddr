@@ -6,8 +6,8 @@ Event obstacle : obstacle(DISTANCE)
 Event noMoreObstacle : noMoreObstacle(DISTANCE)  
 
 
-Context  ctxRobot  ip [ host="192.168.0.3" port=8070 ] -httpserver
-Context  ctxSonarEnv  ip [ host="localhost" port=8090 ]  
+Context  ctxRobot  ip [ host="localhost" port=8070 ] -httpserver
+Context  ctxSonarEnv  ip [ host="192.168.0.2" port=8090 ]  
  
 QActor sonar2 context ctxSonarEnv {
 	Rules {
@@ -28,11 +28,7 @@ QActor sonar2 context ctxSonarEnv {
 }
 
 Robot wall_e QActor rover context ctxRobot {
-	Rules {
-		attempt():-retract(numAttempt(X)), Y is X+1, assert(numAttempt(Y)).
-		
-	}     
-	
+   	
 	Plan init normal 
  			println("Rover STARTS");           
   			//---------UNITY----------
@@ -42,11 +38,21 @@ Robot wall_e QActor rover context ctxRobot {
 			//actorOp initUnityConnection("192.168.0.3");
 			//actorOp createRobotUnity;
 			//---------UNITY----------
-			actorOp getRotationTime;
-			[ ?? actorOpDone(OP, RotationTime) ] addRule rotationTime(RotationTime);
+			switchToPlan config;
       		switchToPlan handlecommands;  
 			delay time(6000000); 
    			println("rover ENDS")                      
+
+	Plan config
+			actorOp getRotationTimeRight;
+			[ ?? actorOpDone(OP, RTR) ] addRule rotationTimeRight(RTR);
+			actorOp getRotationTimeLeft;
+			[ ?? actorOpDone(OP, RTL) ] addRule rotationTimeLeft(RTL);
+			actorOp getSearchTimeForward;
+			[ ?? actorOpDone(OP, STF) ] addRule searchTimeForward(STF);
+			actorOp getSenseTimeFixedObstacle;
+			[ ?? actorOpDone(OP, STFO) ] addRule senseTimeFixedObstacle(STFO);
+			resumeLastPlan
 
 	Plan handlecommands  
 			println("rover waits for user commands");    
@@ -65,7 +71,9 @@ Robot wall_e QActor rover context ctxRobot {
    			robotForward speed(100) time(60000) react event sonar -> handleSonarEnv 
 	   										or    event obstacle -> handleObstacle
    			
-   	Plan handleSonarEnv 
+   	Plan handleSonarEnv
+   			actorOp setAttemptRight(0);
+   			[ ?? goLeft ] println("GoLeft Rule Deleted!");
    			onEvent sonar : sonar(sonar2,wall_e,D) -> robotStop speed(0) time(0);
    			onEvent sonar : sonar(sonar2,wall_e,D) -> switchToPlan handlecommands
    			
@@ -74,37 +82,36 @@ Robot wall_e QActor rover context ctxRobot {
    			switchToPlan typeOfObstacle
    			
    	Plan typeOfObstacle
-   			sense time (2500) noMoreObstacle -> mobileObstacle;
+   			[ !? senseTimeFixedObstacle(T) ] sense time (T) noMoreObstacle -> mobileObstacle;
    			switchToPlan fixedObstacle
    			
    	Plan mobileObstacle
    			switchToPlan goForward	
    			
    	Plan turnRight90
-   			[ !? rotationTime(T) ] robotRight speed(100) time(T);
+   			[ !? rotationTimeRight(T) ] robotRight speed(100) time(T);
    			resumeLastPlan
    			
    	Plan turnLeft90
-   			[ !? rotationTime(T) ] robotLeft speed(100) time(T);
+   			[ !? rotationTimeLeft(T) ] robotLeft speed(100) time(T);
    			resumeLastPlan
    			
    	Plan fixedObstacle
    			println("Aye man wake up, it's steady this fcking bastard!!");
-   			addRule numAttempt(0);
    			[ !? goLeft ] switchToPlan findTheDoorLeft;
 	   		switchToPlan findTheDoorRight
 	   		
    	Plan findTheDoorRight
+   			actorOp incAttemptRight;
    			switchToPlan turnRight90;
-   			robotForward speed(100) time(1500) react event obstacle -> deadEndRight;
-   			[ !? attempt() ] println(attempt);
+   			[ !? searchTimeForward(T) ] robotForward speed(100) time(T) react event obstacle -> deadEndRight;
    			switchToPlan turnLeft90;
    			sense time (500) obstacle -> handleObstacle;
    			switchToPlan goForward
    			
    	Plan findTheDoorLeft
    	   		switchToPlan turnLeft90;
-   			robotForward speed(100) time(1500) react event obstacle -> deadEndLeft;
+   			[ !? searchTimeForward(T) ] robotForward speed(100) time(T) react event obstacle -> deadEndLeft;
    			switchToPlan turnRight90;
    			sense time (500) obstacle -> handleObstacle;
    			switchToPlan goForward
@@ -112,11 +119,25 @@ Robot wall_e QActor rover context ctxRobot {
    	Plan deadEndRight
    			addRule goLeft;
    			switchToPlan turnLeft90;
-   			[ ?? numAttempt(N) ] actorOp multiply(N, 1500);
-   			[ ?? actorOpDone(OP, T) ] robotForward speed(100) time(T);
-   			switchToPlan findTheDoorLeft
+   			delay time(1000);
+   			switchToPlan turnLeft90;
+   			actorOp getAttemptRightTotalTime;
+   			[ !? actorOpDone(OP, Result) ] println(risultatoTotalTime(Result));
+   			[ ?? actorOpDone(OP, Result) ] robotForward speed(100) time(Result);
+   			switchToPlan turnRight90;
+   			delay time(1000);
+   			switchToPlan goForward
    			
    	Plan deadEndLeft
-   			println("Cannot find a door. Terminate.")
+   			println("Cannot find a door. Terminate.");
+   			actorOp setAttemptRight(0);
+   			[ ?? goLeft ] println("GoLeft Rule Deleted!");
+   			switchToPlan turnRight90;
+   			switchToPlan turnLeft90;
+   			switchToPlan turnLeft90;
+   			switchToPlan turnRight90;
+   			switchToPlan turnRight90;
+   			switchToPlan turnLeft90;
+   			switchToPlan handlecommands
    					   			 			
 }

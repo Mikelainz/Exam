@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;step1_4_5_failed/src/rover.ddr&apos; to &apos;roverTemp.ddr&apos;" description="Rename resource &apos;rover.ddr&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="src/rover.ddr" name="roverTemp.ddr" stamp="1503393385140" updateReferences="true"/>
+</session>
