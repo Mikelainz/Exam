@@ -1,0 +1,5 @@
+obstacleDistance: 30
+rotationTimeRight: 300
+rotationTimeLeft: 320
+searchTimeForward: 1500
+senseTimeFixedObstacle: 2500

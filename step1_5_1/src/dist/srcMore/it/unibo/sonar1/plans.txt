@@ -1,0 +1,5 @@
+plan(1,init, sentence(true,move(print,"Sonar1 STARTS"),'','' ))
+plan(2,init, sentence(true,delay( 3000) ,'','' ))
+plan(3,init, sentence(true,raise( sonar , sonar( sonar1,wall_e,30) )'),'','' ))
+plan(4,init, sentence(true,move(print,"EVENT SONAR1 EMITTED"),'','' ))
+plan(5,init, sentence(true,repeatplan() ,'','' ))
