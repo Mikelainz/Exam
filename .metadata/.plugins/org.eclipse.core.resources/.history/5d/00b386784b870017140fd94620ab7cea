@@ -1,0 +1,184 @@
+RobotSystem rover_wall_e_sys
+                     
+Event usercmd : usercmd(robotgui(CMD)) 	//(FORWARD button) CMD w(low)
+Event sonar : sonar(SONARID,TARGETNAME,DISTANCE) //EVENT ENVIRONMENT SONAR1&2
+Event obstacle : obstacle(DISTANCE)      
+Event noMoreObstacle : noMoreObstacle(DISTANCE)  
+
+
+Context  ctxRobot  ip [ host="localhost" port=8070 ] -httpserver
+Context  ctxSonarEnv  ip [ host="192.168.0.2" port=8090 ]  
+
+QActor sonar1 context ctxRobot {
+	
+	Plan init normal 
+	println("Sonar1 STARTS");
+	delay time(3000);
+	emit sonar : sonar(sonar1,wall_e,30);
+	println("EVENT SONAR1 EMITTED");
+	repeatPlan
+	
+}
+ 
+QActor sonar2 context ctxSonarEnv {
+	Rules {
+		testNear(Distance):-retract(actorOpDone(OP, Distance)), eval(lt, Distance, 90).
+	}
+	
+	Plan init normal
+			println("sonar STARTS");
+			actorOp startSonarProcess;
+			switchToPlan work;
+			println("sonar ENDS")
+			
+	Plan work 
+			delay time(50);
+			actorOp getDistanceFromSonar;
+			[ !? testNear(Distance) ] emit sonar:sonar(sonar2, wall_e, Distance);
+			repeatPlan
+}
+
+Robot wall_e QActor rover context ctxRobot {
+	Rules {
+		finalRotation(left):-reachedPoint(RP), da(DA), eval(lt, RP, DA).
+		finalRotation(right):-reachedPoint(RP), da(DA), eval(gt, RP, DA).
+		finalRotation(none):-reachedPoint(RP), da(DA), eval(eq, RP, DA).
+	}
+   	
+	Plan init normal 
+ 			println("Rover STARTS");           
+  			//---------UNITY----------
+  			//Metodo 1 unity
+  			//actorOp workWithUnity("127.0.0.1");//connects to port 6000 192.168.43.229"
+			//Metodo 2 unity
+			//actorOp initUnityConnection("192.168.0.3");
+			//actorOp createRobotUnity;
+			//---------UNITY----------
+			switchToPlan config;
+			switchToPlan handleSonar1;
+      		switchToPlan handlecommands;  
+			delay time(6000000); 
+   			println("rover ENDS")                      
+
+	Plan config
+			actorOp setAttemptRight(0);
+			actorOp getRotationTimeRight;
+			[ ?? actorOpDone(OP, RTR) ] addRule rotationTimeRight(RTR);
+			actorOp getRotationTimeLeft;
+			[ ?? actorOpDone(OP, RTL) ] addRule rotationTimeLeft(RTL);
+			actorOp getSearchTimeForward;
+			[ ?? actorOpDone(OP, STF) ] addRule searchTimeForward(STF);
+			actorOp getSenseTimeFixedObstacle;
+			[ ?? actorOpDone(OP, STFO) ] addRule senseTimeFixedObstacle(STFO);
+			//Waiting for DA
+			sense time(10000) sonar -> handleSonar1;
+			[ !? da(X) ] resumeLastPlan else repeatPlan
+
+	Plan handlecommands  
+			println("rover waits for user commands");    
+	/*R2*/ 	sense time(10000) usercmd -> execRobotCommand ;
+			repeatPlan 	
+
+	//BUTTON (Forward, Backward, etc) : usercmd("w(low)")
+	Plan execRobotCommand resumeLastPlan   
+			printCurrentEvent;	
+	  		//execCmdGui is defined in RobotActor, CmdUilInterpreter 
+	   		onEvent usercmd : usercmd(CMD) ->  //actorOp execCmdGui(CMD)
+	   			println(printingTheCommandInQActorWall_e(CMD)) ;
+	   		onEvent usercmd : usercmd(CMD) -> switchToPlan goForward
+	   			
+   	Plan goForward 
+   			robotForward speed(100) time(60000) react event sonar -> handleSonar2 
+	   											or    event obstacle -> handleObstacle
+   	
+   	Plan handleSonar1
+   			onEvent sonar : sonar(sonar1, wall_e, D) -> actorOp setDa(D)
+   			
+	Plan handleSonar2
+   			[ ?? goLeft ] println("GoLeft Rule Deleted!");
+   			onEvent sonar : sonar(sonar2, wall_e, D) -> robotStop speed(0) time(0);
+   			onEvent sonar : sonar(sonar2, wall_e, D) -> actorOp setCurrentPoint(D);
+   			switchToPlan evaluateCurrentPoint
+   			
+   	Plan evaluateCurrentPoint
+   			actorOp chooseDirection;
+   			[ ?? actorOpDone(OP, 0) ] switchToPlan goal;
+   			[ ?? actorOpDone(OP, 1) ] switchToPlan turnRight90;
+   			[ ?? actorOpDone(OP, 2) ] switchToPlan turnLeft90;
+   			switchToPlan reachFinalPosition
+   	
+   	Plan reachFinalPosition
+   			robotForward speed(500) time(50);
+   			sense time(100) sonar -> continue;
+   			onEvent sonar : sonar(sonar2, wall_e, D) -> actorOp goalTest(D);
+   			[ ?? actorOpDone(OP, true) ] switchToPlan goal else repeatPlan
+   			
+   			
+   	Plan goal
+   			println("Point B reached!!");
+   			robotRight speed(100) time(3000)
+   			
+   	Plan handleObstacle
+   			onEvent obstacle : obstacle(DISTANCE) -> robotStop speed(0) time(0);
+   			switchToPlan typeOfObstacle
+   			
+   	Plan typeOfObstacle
+   			[ !? senseTimeFixedObstacle(T) ] sense time (T) noMoreObstacle -> mobileObstacle;
+   			switchToPlan fixedObstacle
+   			
+   	Plan mobileObstacle
+   			switchToPlan goForward	
+   			
+   	Plan turnRight90
+   			[ !? rotationTimeRight(T) ] robotRight speed(100) time(T);
+   			resumeLastPlan
+   			
+   	Plan turnLeft90
+   			[ !? rotationTimeLeft(T) ] robotLeft speed(100) time(T);
+   			resumeLastPlan
+   			
+   	Plan fixedObstacle
+   			println("Aye man wake up, it's steady this fcking bastard!!");
+   			[ !? goLeft ] switchToPlan findTheDoorLeft;
+	   		switchToPlan findTheDoorRight
+	   		
+   	Plan findTheDoorRight
+   			actorOp incAttemptRight;
+   			switchToPlan turnRight90;
+   			[ !? searchTimeForward(T) ] robotForward speed(100) time(T) react event obstacle -> deadEndRight;
+   			switchToPlan turnLeft90;
+   			sense time (500) obstacle -> handleObstacle;
+   			switchToPlan goForward
+   			
+   	Plan findTheDoorLeft
+   	   		switchToPlan turnLeft90;
+   			[ !? searchTimeForward(T) ] robotForward speed(100) time(T) react event obstacle -> deadEndLeft;
+   			switchToPlan turnRight90;
+   			sense time (500) obstacle -> handleObstacle;
+   			switchToPlan goForward
+   			
+   	Plan deadEndRight
+   			addRule goLeft;
+   			switchToPlan turnLeft90;
+   			delay time(1000);
+   			switchToPlan turnLeft90;
+   			actorOp getAttemptRightTotalTime;
+   			[ !? actorOpDone(OP, Result) ] println(risultatoTotalTime(Result));
+   			[ ?? actorOpDone(OP, Result) ] robotForward speed(100) time(Result);
+   			switchToPlan turnRight90;
+   			delay time(1000);
+   			switchToPlan goForward
+   			
+   	Plan deadEndLeft
+   			println("Cannot find a door. Terminate.");
+   			actorOp setAttemptRight(0);
+   			[ ?? goLeft ] println("GoLeft Rule Deleted!");
+   			switchToPlan turnRight90;
+   			switchToPlan turnLeft90;
+   			switchToPlan turnLeft90;
+   			switchToPlan turnRight90;
+   			switchToPlan turnRight90;
+   			switchToPlan turnLeft90;
+   			switchToPlan handlecommands
+   					   			 			
+}
