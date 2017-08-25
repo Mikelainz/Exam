@@ -132,7 +132,6 @@ actorPrintln( X ):- actorobj(A), text_term(XS,X), A  <- println( XS ).
 %-------------------------------------------------
 %  User static rules about rover
 %------------------------------------------------- 
-configMessageValues( DA,FPT):-da( DA),finalPointTollerance( FPT).
 /*
 ------------------------------------------------------------------------
 testex :- actorPrintln( testex ),

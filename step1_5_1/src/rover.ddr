@@ -6,7 +6,7 @@ Event local_alarm : alarm
 
 Event sonar : sonar(SONARID,TARGETNAME,DISTANCE) //EVENT ENVIRONMENT SONAR1&2
 Event local_sonar2Support : sonar2Support(TARGETNAME,DISTANCE)
-Event local_goalEvent : goalEvent
+Event local_goal : goal
 
 Event obstacle : obstacle(DISTANCE)      
 Event noMoreObstacle : noMoreObstacle(DISTANCE)
@@ -15,9 +15,9 @@ Dispatch daValue : daValue(DA)
 
 
 
-Context  ctxRobot  ip [ host="localhost" port=8070 ] -httpserver
-Context  ctxSonar1  ip [ host="192.168.43.74" port=8100 ]
-Context  ctxSonar2  ip [ host="192.168.43.101" port=8090 ]  
+Context  ctxRobot  ip [ host="192.168.43.101" port=8070 ] -httpserver
+Context  ctxSonar1  ip [ host="localhost" port=8100 ]
+Context  ctxSonar2  ip [ host="192.168.43.254" port=8090 ]  
 
 QActor sonar1 context ctxSonar1 {
 	
@@ -26,10 +26,10 @@ QActor sonar1 context ctxSonar1 {
 	}
 	
 	Plan init normal
-			println("Sonar1 STARTS");
+			println("[SONAR1] STARTS");
 			actorOp startSonarProcess;
 			switchToPlan work;
-			println("Sonar1 ENDS")
+			println("[SONAR1] ENDS")
 			
 	Plan work 
 			delay time(50);
@@ -45,10 +45,10 @@ QActor sonar2 context ctxSonar2 {
 	}
 	
 	Plan init normal
-			println("sonar STARTS");
+			println("[SONAR2] STARTS");
 			actorOp startSonarProcess;
 			switchToPlan work;
-			println("sonar ENDS")
+			println("[SONAR2] ENDS")
 			
 	Plan work 
 			delay time(50);
@@ -60,43 +60,42 @@ QActor sonar2 context ctxSonar2 {
 QActor sonarsupport context ctxRobot {
 	
 	Plan init normal
-			println("Sonar Support STARTS");
+			println("[SONAR_SUPPORT] STARTS");
+			switchToPlan configDa;
 			switchToPlan work;
-			println("Sonar Support ENDS")
+			println("[SONAR_SUPPORT] ENDS")
 			
 	Plan work
 			sense time(60000) sonar -> handleSonar;
 			repeatPlan
 			
 	Plan handleSonar
-			onEvent sonar : sonar(sonar1, wall_e, D) -> switchToPlan handleSonar1;
+//			onEvent sonar : sonar(sonar1, wall_e, D) -> switchToPlan handleSonar1;
 			onEvent sonar : sonar(sonar2, wall_e, D) -> switchToPlan handleSonar2;
-			resumeLastPlan
-	
-	Plan handleSonar1
-			[ !? da(DA) ] println(daAlreadySettedAt(DA)) else switchToPlan setDa;
 			resumeLastPlan
 	
 	Plan handleSonar2
 			onEvent sonar : sonar(sonar2, wall_e, D) -> emit local_sonar2Support : sonar2Support(wall_e, D);
 		 	onEvent sonar : sonar(sonar2, wall_e, D) -> actorOp goalTest(D);
-		 	[ !? actorOpDone(OP, true) ] println("[SUPPORT] emitting goalEvent");
-   			[ ?? actorOpDone(OP, true) ] emit local_goalEvent : goalEvent;
+		 	[ !? actorOpDone(OP, true) ] println("[SONAR_SUPPORT] emitting local_goal");
+   			[ ?? actorOpDone(OP, true) ] emit local_goal : goal;
    			resumeLastPlan
    	
-   	Plan setDa
+   	Plan configDa
+   			sense time(60000) sonar -> continue;
    			onEvent sonar : sonar(sonar1, wall_e, D) -> addRule da(D);
-   			onEvent sonar : sonar(sonar1, wall_e, D) -> actorOp setDa(D);
-   			onEvent sonar : sonar(sonar1, wall_e, D) -> forward rover -m daValue : daValue(D);
+   			[ !? da(DA) ] println(daSettedAt(DA)) else repeatPlan;
+   			[ !? da(DA) ] actorOp setDa(D);
+   			[ !? da(DA) ] forward rover -m daValue : daValue(D);
    			resumeLastPlan
 } 
 
 QActor usercmdsupport context ctxRobot {
 	
 	Plan init normal
-			println("UserCmd Support STARTS");
+			println("[USERCMD_SUPPORT] STARTS");
 			switchToPlan work;
-			println("UserCmd Support ENDS")
+			println("[USERCMD_SUPPORT] ENDS")
 			
 	Plan work
 			sense time(60000) usercmd -> handleUserCmd;
@@ -111,7 +110,7 @@ QActor usercmdsupport context ctxRobot {
 Robot wall_e QActor rover context ctxRobot {
    	
 	Plan init normal
- 			println("Rover STARTS");           
+ 			println("[ROVER] STARTS");           
   			//---------UNITY----------
   			//Metodo 1 unity
   			//actorOp workWithUnity("127.0.0.1");//connects to port 6000 192.168.43.229"
@@ -122,7 +121,7 @@ Robot wall_e QActor rover context ctxRobot {
 			switchToPlan config;
       		switchToPlan standby;  
 			delay time(6000000); 
-   			println("rover ENDS")                      
+   			println("[ROVER] ENDS")                      
 
 	Plan config
 			actorOp setAttemptRight(0);
@@ -143,7 +142,7 @@ Robot wall_e QActor rover context ctxRobot {
 			[ !? da(X) ] resumeLastPlan else repeatPlan
 			
 	Plan standby  
-			println("rover waits to start.");    
+			println("[ROVER] waits to start.");    
 			sense time(10000) local_start -> handleStart;
 			repeatPlan 	
 
@@ -154,7 +153,7 @@ Robot wall_e QActor rover context ctxRobot {
 	Plan handleAlarm 
 			robotStop speed(0) time(0); 
 			sense time(10000) local_start -> continue; //Da testare se la else funziona nella sense.
-			onEvent local_start : start -> println("Resuming From Alarm") else repeatPlan
+			onEvent local_start : start -> println("[ROVER] resuming From Alarm") else repeatPlan
 			
 	Plan goForward 
    			robotForward speed(100) time(60000) react event local_sonar2Support -> handleSonar2Support 
@@ -163,12 +162,13 @@ Robot wall_e QActor rover context ctxRobot {
 			repeatPlan
 	   											
 	Plan handleSonar2Support
-   			[ ?? goLeft ] println("GoLeft Rule Deleted!");
+   			[ ?? goLeft ] println("[ROVER] goLeft Rule Deleted!");
    			onEvent local_sonar2Support : sonar2Support(wall_e, D) -> robotStop speed(0) time(0);
    			onEvent local_sonar2Support : sonar2Support(wall_e, D) -> switchToPlan goalLine;
    			resumeLastPlan
    			
    	Plan goalLine
+   			println("[ROVER] I'm on the GoalLine.");
    			onEvent local_sonar2Support : sonar2Support(wall_e, D) -> actorOp chooseDirection(D);
    			[ ?? actorOpDone(OP, 0) ] switchToPlan goal;
    			[ ?? actorOpDone(OP, 1) ] switchToPlan turnRight90;
@@ -176,12 +176,12 @@ Robot wall_e QActor rover context ctxRobot {
    			switchToPlan reachFinalPosition
    	
    	Plan reachFinalPosition
-   			robotForward speed(100) time(20000) react event local_goalEvent -> goal 
+   			robotForward speed(100) time(20000) react event local_goal -> goal 
    												or 	  event local_alarm -> handleAlarm;
    			repeatPlan
    			
    	Plan goal
-   			println("Point B reached!!");
+   			println("[ROVER] point B reached!!");
    			robotRight speed(100) time(3000);
    			actorOp exit
    			
@@ -198,11 +198,11 @@ Robot wall_e QActor rover context ctxRobot {
    			switchToPlan goForward	
    			
    	Plan turnRight90
-   			[ !? rotationTimeRight(T) ] robotRight speed(100) time(T) react event local_alarm -> handleAlarm;
+   			[ !? rotationTimeRight(T) ] robotRight speed(100) time(T);
    			resumeLastPlan
    			
    	Plan turnLeft90
-   			[ !? rotationTimeLeft(T) ] robotLeft speed(100) time(T) react event local_alarm -> handleAlarm;
+   			[ !? rotationTimeLeft(T) ] robotLeft speed(100) time(T);
    			resumeLastPlan
    			
    	Plan fixedObstacle
@@ -239,15 +239,19 @@ Robot wall_e QActor rover context ctxRobot {
    			switchToPlan goForward
    			
    	Plan deadEndLeft
-   			println("Cannot find a door. Terminate.");
+   			println("[ROVER] cannot find a door. Terminate.");
    			actorOp setAttemptRight(0);
-   			[ ?? goLeft ] println("GoLeft Rule Deleted!");
+   			[ ?? goLeft ] println("[ROVER] goLeft Rule Deleted!");
+   			switchToPlan hilariousEnd;
+   			actorOp exit
+   			
+   	Plan hilariousEnd
    			switchToPlan turnRight90;
    			switchToPlan turnLeft90;
    			switchToPlan turnLeft90;
    			switchToPlan turnRight90;
    			switchToPlan turnRight90;
    			switchToPlan turnLeft90;
-   			switchToPlan standby
+   			resumeLastPlan
    					   			 			
 }

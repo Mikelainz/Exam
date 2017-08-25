@@ -1,8 +1,0 @@
-plan(1,init, sentence(true,move(print,"sonar2 STARTS"),'','' ))
-plan(2,init, sentence(true,move(actorOp,startSonarProcess,0,""),'','' ))
-plan(3,init, sentence(true,move( switchplan(work) ),'','' ))
-plan(4,init, sentence(true,move(print,"sonar2 ENDS"),'','' ))
-plan(1,work, sentence(true,delay( 50) ,'','' ))
-plan(2,work, sentence(true,move(actorOp,getDistanceFromSonar,0,""),'','' ))
-plan(3,work, sentence( testNear( Distance),raise( sonar , sonar( sonar2,wall_e,Distance) )'),'','' ))
-plan(4,work, sentence(true,repeatplan() ,'','' ))

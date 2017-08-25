@@ -5,9 +5,32 @@ This code is generated only ONCE
 package it.unibo.sonarsupport;
 import it.unibo.is.interfaces.IOutputEnvView;
 import it.unibo.qactors.QActorContext;
+import it.unibo.rover.SingletonConfigurations;
 
 public class Sonarsupport extends AbstractSonarsupport { 
+	private SingletonConfigurations configurations;
+	private int da;
+	
+	
 	public Sonarsupport(String actorId, QActorContext myCtx, IOutputEnvView outEnvView )  throws Exception{
 		super(actorId, myCtx, outEnvView);
+		try {
+			this.configurations = SingletonConfigurations.getInstance();
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	public void setDa(int da) {
+		this.da = da;
+	}
+	
+	public boolean goalTest(int currentPosition) {
+		int difference = da-currentPosition;
+		if ( Math.abs(difference) <= configurations.getFinalPointTollerance()  ) 
+			return true;
+		else 
+			return false;
 	}
 }
