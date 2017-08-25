@@ -2,25 +2,39 @@ RobotSystem rover_wall_e_sys
                      
 Event usercmd : usercmd(robotgui(CMD)) 	//(FORWARD button) CMD w(low)
 Event sonar : sonar(SONARID,TARGETNAME,DISTANCE) //EVENT ENVIRONMENT SONAR1&2
+Event local_sonar2Support : sonar2Support(TARGETNAME,DISTANCE)
 Event obstacle : obstacle(DISTANCE)      
-Event noMoreObstacle : noMoreObstacle(DISTANCE)  
+Event noMoreObstacle : noMoreObstacle(DISTANCE)
+Event local_goalEvent : goalEvent
+Dispatch daValue : daValue(DA)
 
 
-Context  ctxRobot  ip [ host="192.168.0.2" port=8070 ] -httpserver
-Context  ctxSonarEnv  ip [ host="localhost" port=8090 ]  
 
-QActor sonar1 context ctxSonarEnv {
+Context  ctxRobot  ip [ host="localhost" port=8070 ] -httpserver
+Context  ctxSonar1  ip [ host="192.168.43.74" port=8100 ]
+Context  ctxSonar2  ip [ host="192.168.43.101" port=8090 ]  
+
+QActor sonar1 context ctxSonar1 {
 	
-	Plan init normal 
-	println("Sonar1 STARTS");
-	delay time(3000);
-	emit sonar : sonar(sonar1,wall_e,30);
-	println("EVENT SONAR1 EMITTED");
-	repeatPlan
+	Rules {
+		testNear(Distance):-retract(actorOpDone(OP, Distance)), eval(lt, Distance, 90).
+	}
+	
+	Plan init normal
+			println("Sonar1 STARTS");
+			actorOp startSonarProcess;
+			switchToPlan work;
+			println("Sonar1 ENDS")
+			
+	Plan work 
+			delay time(50);
+			actorOp getDistanceFromSonar;
+			[ !? testNear(Distance) ] emit sonar:sonar(sonar1, wall_e, Distance);
+			repeatPlan
 	
 }
  
-QActor sonar2 context ctxSonarEnv {
+QActor sonar2 context ctxSonar2 {
 	Rules {
 		testNear(Distance):-retract(actorOpDone(OP, Distance)), eval(lt, Distance, 90).
 	}
@@ -38,14 +52,47 @@ QActor sonar2 context ctxSonarEnv {
 			repeatPlan
 }
 
+QActor roversupport context ctxRobot {
+	
+	Plan init normal
+			println("Rover Support STARTS");
+			switchToPlan work;
+			println("Rover Support ENDS")
+			
+	Plan work
+			sense time(60000) sonar -> handleSonar;
+			repeatPlan
+			
+	Plan handleSonar
+			onEvent sonar : sonar(sonar1, wall_e, D) -> switchToPlan handleSonar1;
+			onEvent sonar : sonar(sonar2, wall_e, D) -> switchToPlan handleSonar2;
+			resumeLastPlan
+	
+	Plan handleSonar1
+			[ !? da(DA) ] println(daAlreadySettedAt(DA)) else switchToPlan setDa;
+			resumeLastPlan
+	
+	Plan handleSonar2
+			onEvent sonar : sonar(sonar2, wall_e, D) -> emit local_sonar2Support : sonar2Support(wall_e, D);
+		 	onEvent sonar : sonar(sonar2, wall_e, D) -> actorOp goalTest(D);
+		 	[ !? actorOpDone(OP, true) ] println("[SUPPORT] emitting goalEvent");
+   			[ ?? actorOpDone(OP, true) ] emit local_goalEvent : goalEvent;
+   			resumeLastPlan
+   	
+   	Plan setDa
+   			onEvent sonar : sonar(sonar1, wall_e, D) -> addRule da(D);
+   			onEvent sonar : sonar(sonar1, wall_e, D) -> actorOp setDa(D);
+   			onEvent sonar : sonar(sonar1, wall_e, D) -> forward rover -m daValue : daValue(D);
+   			resumeLastPlan
+} 
+
 Robot wall_e QActor rover context ctxRobot {
+	
 	Rules {
-		finalRotation(left):-reachedPoint(RP), da(DA), eval(lt, RP, DA).
-		finalRotation(right):-reachedPoint(RP), da(DA), eval(gt, RP, DA).
-		finalRotation(none):-reachedPoint(RP), da(DA), eval(eq, RP, DA).
+		configMessageValues(DA, FPT) :- da(DA), finalPointTollerance(FPT).
 	}
    	
-	Plan init normal 
+	Plan init normal
  			println("Rover STARTS");           
   			//---------UNITY----------
   			//Metodo 1 unity
@@ -55,7 +102,6 @@ Robot wall_e QActor rover context ctxRobot {
 			//actorOp createRobotUnity;
 			//---------UNITY----------
 			switchToPlan config;
-			switchToPlan handleSonar1;
       		switchToPlan handlecommands;  
 			delay time(6000000); 
    			println("rover ENDS")                      
@@ -70,13 +116,17 @@ Robot wall_e QActor rover context ctxRobot {
 			[ ?? actorOpDone(OP, STF) ] addRule searchTimeForward(STF);
 			actorOp getSenseTimeFixedObstacle;
 			[ ?? actorOpDone(OP, STFO) ] addRule senseTimeFixedObstacle(STFO);
+			actorOp getFinalPointTollerance;
+			[ ?? actorOpDone(OP, FPT) ] addRule finalPointTollerance(FPT);			
 			//Waiting for DA
-			sense time(10000) sonar -> handleSonar1;
+			receiveMsg time(10000);
+			onMsg daValue : daValue(DA) -> addRule da(DA);
+			onMsg daValue : daValue(DA) -> actorOp setDa(DA);
 			[ !? da(X) ] resumeLastPlan else repeatPlan
-
+			
 	Plan handlecommands  
 			println("rover waits for user commands");    
-	/*R2*/ 	sense time(10000) usercmd -> execRobotCommand ;
+			sense time(10000) usercmd -> execRobotCommand ;
 			repeatPlan 	
 
 	//BUTTON (Forward, Backward, etc) : usercmd("w(low)")
@@ -88,44 +138,30 @@ Robot wall_e QActor rover context ctxRobot {
 	   		onEvent usercmd : usercmd(CMD) -> switchToPlan goForward
 	   			
    	Plan goForward 
-   			robotForward speed(100) time(60000) react event sonar -> handleSonar2 
+   			robotForward speed(100) time(60000) react event local_sonar2Support -> handleSonar2Support 
 	   											or    event obstacle -> handleObstacle
-   	
-   	Plan handleSonar1
-   			//ISTRUZIONE PER RENDERE VERA LA GUARDIA FINALE NEL PIANO CONFIG
-   			onEvent sonar : sonar(sonar1, wall_e, D) -> addRule da(D); 
-   			onEvent sonar : sonar(sonar1, wall_e, D) -> actorOp setDa(D);
-   			resumeLastPlan
-   			
-	Plan handleSonar2
+   	   			
+	Plan handleSonar2Support
    			[ ?? goLeft ] println("GoLeft Rule Deleted!");
-   			onEvent sonar : sonar(sonar2, wall_e, D) -> robotStop speed(0) time(0);
-   			onEvent sonar : sonar(sonar2, wall_e, D) -> println(currentPoint(D));
-   			onEvent sonar : sonar(sonar2, wall_e, D) -> actorOp setCurrentPoint(D);
-   			onEvent sonar : sonar(sonar2, wall_e, D) -> switchToPlan evaluateCurrentPoint;
+   			onEvent local_sonar2Support : sonar2Support(wall_e, D) -> robotStop speed(0) time(0);
+   			onEvent local_sonar2Support : sonar2Support(wall_e, D) -> switchToPlan goalLine;
    			resumeLastPlan
    			
-   	Plan evaluateCurrentPoint
-   			actorOp chooseDirection;
+   	Plan goalLine
+   			onEvent local_sonar2Support : sonar2Support(wall_e, D) -> actorOp chooseDirection(D);
    			[ ?? actorOpDone(OP, 0) ] switchToPlan goal;
    			[ ?? actorOpDone(OP, 1) ] switchToPlan turnRight90;
    			[ ?? actorOpDone(OP, 2) ] switchToPlan turnLeft90;
    			switchToPlan reachFinalPosition
    	
    	Plan reachFinalPosition
-   			robotForward speed(100) time(250) react event sonar -> pianoTemp;
-   			//sense time(100) sonar -> continue;
-   			//onEvent sonar : sonar(sonar2, wall_e, D) -> actorOp goalTest(D);
-   			//[ ?? actorOpDone(OP, true) ] switchToPlan goal else repeatPlan
+   			robotForward speed(100) time(20000) react event local_goalEvent -> goal;
    			repeatPlan
-   			
-   	Plan pianoTemp
-   			onEvent sonar : sonar(sonar2, wall_e, D) -> actorOp goalTest(D);
-   			[ ?? actorOpDone(OP, true) ] switchToPlan goal else resumeLastPlan
    			
    	Plan goal
    			println("Point B reached!!");
-   			robotRight speed(100) time(3000)
+   			robotRight speed(100) time(3000);
+   			actorOp exit
    			
    	Plan handleObstacle
    			onEvent obstacle : obstacle(DISTANCE) -> robotStop speed(0) time(0);

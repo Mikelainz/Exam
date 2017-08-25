@@ -132,9 +132,7 @@ actorPrintln( X ):- actorobj(A), text_term(XS,X), A  <- println( XS ).
 %-------------------------------------------------
 %  User static rules about rover
 %------------------------------------------------- 
-finalRotation( left):-reachedPoint( RP),da( DA),eval( lt,RP,DA).
-finalRotation( right):-reachedPoint( RP),da( DA),eval( gt,RP,DA).
-finalRotation( none):-reachedPoint( RP),da( DA),eval( eq,RP,DA).
+configMessageValues( DA,FPT):-da( DA),finalPointTollerance( FPT).
 /*
 ------------------------------------------------------------------------
 testex :- actorPrintln( testex ),

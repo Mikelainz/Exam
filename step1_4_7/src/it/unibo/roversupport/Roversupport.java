@@ -3,34 +3,27 @@
 This code is generated only ONCE
 */
 package it.unibo.roversupport;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.StringTokenizer;
+
 
 import it.unibo.is.interfaces.IOutputEnvView;
 import it.unibo.qactors.QActorContext;
+import it.unibo.rover.SingletonConfigurations;
 
 public class Roversupport extends AbstractRoversupport { 
+	
+	private SingletonConfigurations configurations;
 	private int da;
-	private int finalPointTollerance;
+	
 	
 	public Roversupport(String actorId, QActorContext myCtx, IOutputEnvView outEnvView )  throws Exception{
 		super(actorId, myCtx, outEnvView);
-		this.readConfigurations();
-	}
-	
-	private void readConfigurations() throws IOException {
-		BufferedReader br = new BufferedReader(new FileReader("configurations.txt"));
-		StringTokenizer st;
-		String line;
-		while((line=br.readLine())!=null && !line.trim().isEmpty()) {
-			st = new StringTokenizer(line, ":");
-			//Delete first token
-			System.out.println(line);
-			if(line.startsWith("finalPointTollerance")) this.finalPointTollerance = Integer.parseInt(st.nextToken().trim());
+		try {
+			this.configurations = SingletonConfigurations.getInstance();
+			System.out.println("[Support] all conf setted");
+		} catch(Exception e) {
+			e.printStackTrace();
 		}
-		br.close();
+		
 	}
 	
 	public void setDa(int da) {
@@ -39,7 +32,7 @@ public class Roversupport extends AbstractRoversupport {
 	
 	public boolean goalTest(int currentPosition) {
 		int difference = da-currentPosition;
-		if ( Math.abs(difference) <= finalPointTollerance  ) 
+		if ( Math.abs(difference) <= configurations.getFinalPointTollerance()  ) 
 			return true;
 		else 
 			return false;

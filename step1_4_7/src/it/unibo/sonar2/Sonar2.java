@@ -8,10 +8,8 @@ import java.io.BufferedReader;
 import it.unibo.is.interfaces.IOutputEnvView;
 import it.unibo.qactors.QActorContext;
 
-public class Sonar2 extends AbstractSonar2 {
-	
+public class Sonar2 extends AbstractSonar2 { 
 	private BufferedReader sonarReader;
-	
 	public Sonar2(String actorId, QActorContext myCtx, IOutputEnvView outEnvView )  throws Exception{
 		super(actorId, myCtx, outEnvView);
 	}
@@ -23,12 +21,11 @@ public class Sonar2 extends AbstractSonar2 {
 		} catch(Exception e) {
  			e.printStackTrace();
 		}		
-	}
-	
+	}	
 	public int getDistanceFromSonar(){
 		try {
 			String distance = sonarReader.readLine();			
-			println("[ Sonar2] getDistanceFromSonar " + distance  ); 
+			println("[SONAR2] getDistanceFromSonar " + distance  ); 
 			return Integer.parseInt(distance);
 		} catch(Exception e) {
  			e.printStackTrace();
