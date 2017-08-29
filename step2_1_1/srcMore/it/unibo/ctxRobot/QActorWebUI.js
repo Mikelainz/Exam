@@ -20,11 +20,19 @@ var curSpeed = "low";
         document.getElementById("state").value = ""+error;
     };
     
-	function setSpeed(val){
-		curSpeed = val;
-		document.getElementById("speed").value = curSpeed;
-	}
 	function send(message) {
 		document.getElementById("sending").value = ""+message;
 		sock.send(message);
 	};
+	function exhibitionControl() {
+	document.getElementById("command").style.display="inline";
+	document.getElementById("releaseControl").style.display="inline";
+	document.getElementById("takeControl").style.display="none";
+	}
+
+	function hideControl() {
+	document.getElementById("command").style.display="none";
+	document.getElementById("releaseControl").style.display="none";
+	document.getElementById("takeControl").style.display="inline";	
+	}
+	

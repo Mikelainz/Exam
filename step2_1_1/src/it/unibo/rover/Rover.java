@@ -52,6 +52,11 @@ public class Rover extends AbstractRover {
 		this.attemptRight++;
 		System.out.println("[ROVER] attempt right: " + this.attemptRight);
 	}
+
+	public void decAttemptRight() {
+		if(this.attemptRight>0) this.attemptRight--;
+		System.out.println("[ROVER] attempt right: " + this.attemptRight);
+	}
 	
 	public void setDa(int da) {
 		this.da = da;

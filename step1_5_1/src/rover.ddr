@@ -14,10 +14,9 @@ Event noMoreObstacle : noMoreObstacle(DISTANCE)
 Dispatch daValue : daValue(DA)
 
 
-
-Context  ctxRobot  ip [ host="192.168.43.101" port=8070 ] -httpserver
+Context  ctxRobot  ip [ host="localhost" port=8070 ] -httpserver
 Context  ctxSonar1  ip [ host="192.168.43.74" port=8100 ]
-Context  ctxSonar2  ip [ host="localhost" port=8090 ]  
+Context  ctxSonar2  ip [ host="192.168.43.254" port=8090 ]  
 
 QActor sonar1 context ctxSonar1 {
 	

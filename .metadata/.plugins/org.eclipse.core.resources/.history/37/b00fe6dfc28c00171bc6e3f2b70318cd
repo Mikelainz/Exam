@@ -1,0 +1,113 @@
+@media only screen and (min-width: 600px) {
+	
+	#start,#alarm{
+		font-size: 130%;
+		margin: 2pt;
+		color: white;
+		background-color: transparent;
+		font-family: myFont1;
+	}
+	body{
+		background-image: url("groundFull.jpg");
+	}
+	#footer {
+    position: fixed;
+    bottom: 2%;
+	left: 5%;
+    font: 8pt Lucida Sans;
+    line-height: 20pt;  
+	}
+	#speed,#connection,#sending,#state{
+		font-weight: 600;
+		border: hidden;
+		background: transparent;
+		color: white;
+		font-size: 8pt;
+	}
+}
+
+@media only screen and (max-width: 600px) {
+	
+	#start,#alarm {
+		font-size: 150%;
+		margin: 2pt;
+		color: white;
+		background-color: transparent;
+		font-family: myFont1;
+	}
+	body{
+		background-image: url("groundMobile.jpg");
+	}
+	#footer {
+    position: fixed;
+    bottom: 2%;
+	left: 5%;
+   	font: 8pt Lucida Sans;
+    line-height: 20pt;  
+	}
+	#speed,#connection,#sending,#state{
+		font-weight: 600;
+		border: hidden;
+		background: transparent;
+		color: white;
+		font-size: 8pt;
+	}
+}
+
+@font-face {
+    font-family: myFont;
+    src: url(./04B_30__.TTF);
+}
+
+
+#start,#alarm{
+	border-radius: 0pt 0pt 0pt 0pt;
+	-moz-border-radius: 0pt 0pt 0pt 0pt;
+	-webkit-border-radius: 0pt 0pt 0pt 0pt;
+	border: 2.5pt solid #ffffff;
+}
+#start:hover,#alarm:hover{
+	border-radius: 0pt 15pt 0pt 15pt;
+	-moz-border-radius: 0pt 15pt 0pt 15pt;
+	-webkit-border-radius: 0pt 15pt 0pt 15pt;
+	color: #009999;
+	transition-duration:1s;
+	border: 0.5pt solid #fff;
+	padding: 5pt;
+	background-color: #D2FF2D;
+	-webkit-box-shadow: 0px 0px 20px 2px #8AE78C;
+	-moz-box-shadow: 0px 0px 20x 2px #8AE78C;
+	box-shadow: 0px 0px 20px 2px #8AE78C;
+	
+}
+#start,#alarm{
+	border-radius: 8pt 0pt 8pt 0pt;
+	-moz-border-radius: 8pt 0pt 8pt 0pt;
+	-webkit-border-radius: 8pt 0pt 8pt 0pt;
+	color: #ff6633;
+	border: 1.5pt solid #ff6633;
+	background-color: transparent;
+}
+
+body {
+    margin: 20pt;
+    line-height: 26pt;
+	color: white;
+	font-family: myFont;
+}
+
+#footerTerm {
+    float: left;
+	margin: 2pt;
+	background:transparent;
+}
+
+#top{
+    position: fixed;
+    top:3%;
+	left: 0%;
+}
+table {
+  table-layout: fixed;
+  width: 100%;
+}

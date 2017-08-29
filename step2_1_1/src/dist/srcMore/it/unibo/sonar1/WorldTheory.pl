@@ -132,7 +132,7 @@ actorPrintln( X ):- actorobj(A), text_term(XS,X), A  <- println( XS ).
 %-------------------------------------------------
 %  User static rules about sonar1
 %------------------------------------------------- 
-testNear( Distance):-retract( actorOpDone( OP,Distance)),eval( lt,Distance,90).
+testNear( Distance):-retract( actorOpDone( OP,Distance)),eval( lt,Distance,200).
 /*
 ------------------------------------------------------------------------
 testex :- actorPrintln( testex ),

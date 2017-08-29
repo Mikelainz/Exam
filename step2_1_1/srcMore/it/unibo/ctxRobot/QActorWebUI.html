@@ -8,18 +8,55 @@
 <body>
     <div id="top"> 
         <table>
-               <td align="center">
+        			<td id="vuoto">
+        				
+        			</td>
+				   	<td align="center">
             		<input
 						type="button" id="alarm"
-						value="Alarm" onmousedown="send('alarm')"  />
+						value="Alarm" onmousedown="send('alarm');" />
                    	<input id="start"
                     type="button" onmousedown="send('start');"
                     value="Start" />
-               </td>   
+                   	<input type="button" id="takeControl" onClick="exhibitionControl();send('takecontrol')" value="Take Control"/>
+                   	<input type="button" id="releaseControl" onClick="hideControl();send('releasecontrol')" value="Release Control"/>
+                </td>   
             </tr>
         </table>
     </div>    
-            
+        
+    <div id="command">  
+ 	<table>
+		<tr>
+			<td>
+                <center>
+				<table>
+                    <tr>
+                        <td align="center"><img 
+							id="ExternalForward" value="FORWARD" src="http://whatfo.altervista.org/wp-content/uploads/2017/08/freccia-04.png" onmousedown="send('fwd');" /></td>
+                    </tr>
+					<tr>
+                        <td align="center">
+						<img
+							id="ExternalLeft" value="LEFT" src="http://whatfo.altervista.org/wp-content/uploads/2017/08/freccia-03.png" onmousedown="send('lft');"  />
+						<img
+							id="ExternalStop" value="STOP" src="http://whatfo.altervista.org/wp-content/uploads/2017/08/stop.png" onmousedown="send('stp');"  />
+						<img
+							id="ExternalRight" value="RIGHT" src="http://whatfo.altervista.org/wp-content/uploads/2017/08/freccia-01.png" onmousedown="send('rgt');" />
+                        </td>    
+					</tr>
+					<tr>
+						<td align="center"><img
+							id="ExternalBackward" value="BACKWARD" src="http://whatfo.altervista.org/wp-content/uploads/2017/08/freccia-02.png" onmousedown="send('bwd');"/></td>
+						
+					</tr>
+				</table>
+                </center>
+			</td>
+		</tr>
+	</table>
+    </div>  
+    
     <div id="footer">
         <div id="footerTerm">
         Connection: 

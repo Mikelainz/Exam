@@ -15,12 +15,10 @@ public class SensorObserver<T extends ISensorData> extends SituatedPlainObject i
 protected QActor actor;
 
 private SingletonConfigurations configurations;
-private boolean obstacleEmitted;
 
 	public SensorObserver(QActor actor, IOutputView outView) { 
 		super(outView);
 		this.actor = actor;
-		this.obstacleEmitted = false;
 		try {
 			this.configurations = SingletonConfigurations.getInstance();
 		} catch (IOException e) {
@@ -59,13 +57,8 @@ private boolean obstacleEmitted;
 		if( t.getName().equals("distance")){
 			int d = Integer.parseInt(t.getArg(0).toString());
 			//if( d > 5 && d < 120 ) println("SensorObserver: " + data.getDefStringRep() + " json:" + data.getJsonStringRep());
-			if( this.obstacleEmitted && d > this.configurations.getObstacleDistance()+10){
-				QActorUtils.raiseEvent(actor.getQActorContext(),"sensor", "noMoreObstacle", "noMoreObstacle("+d+")" );
-				this.obstacleEmitted = false;
-			}
-			else if( d < this.configurations.getObstacleDistance() ){
-				QActorUtils.raiseEvent(actor.getQActorContext(),"sensor", "obstacle", "obstacle("+d+")" );
-				this.obstacleEmitted = true;
+			if( d < this.configurations.getObstacleDistance() ){
+				QActorUtils.raiseEvent(actor.getQActorContext(),"sensor", "sonarDetect", "sonarDetect("+d+")" );
  			}
 		}
 	}	
