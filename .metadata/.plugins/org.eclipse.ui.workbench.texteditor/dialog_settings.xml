@@ -2,21 +2,23 @@
 <section name="Workbench">
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
 		<item value="false" key="isRegEx"/>
-		<item value="haltRobot" key="selection"/>
+		<item value="ctrlStop" key="selection"/>
 		<item value="false" key="casesensitive"/>
 		<item value="false" key="incremental"/>
 		<item value="true" key="wrap"/>
 		<item value="false" key="wholeword"/>
 		<list key="findhistory">
-			<item value="haltRobot"/>
+			<item value="ctrlStop"/>
+			<item value="addRule"/>
+			<item value="addRul"/>
+			<item value="handleAlarmGo"/>
+			<item value="handleAl"/>
+			<item value="goH"/>
+			<item value="handleOb"/>
 			<item value="handleA"/>
-			<item value="UserCmd Support"/>
-			<item value="Http"/>
-			<item value="HttpServer"/>
-			<item value="start"/>
-			<item value="send"/>
 		</list>
 		<list key="replacehistory">
+			<item value="sonarDetect"/>
 		</list>
 	</section>
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
