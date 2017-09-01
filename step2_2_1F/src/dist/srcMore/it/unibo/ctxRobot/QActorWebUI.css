@@ -1,0 +1,152 @@
+@media only screen and (min-width: 600px) {
+	#ExternalHome{
+		width: 3%;
+		position: absolute;
+		left: 10%;
+		top:2%;
+		display:none;
+	}
+	#ExternalForward,#ExternalBackward,#ExternalLeft,#ExternalRight,#ExternalStop{
+		width: 6%;
+	}
+	#takeControl,#releaseControl,#alarm{
+		display: none;
+	}
+	#ExternalForward,#ExternalBackward,#ExternalLeft,#ExternalRight,#ExternalStop,#takeControl,#releaseControl,#start,#alarm{
+		font-size: 170%;
+		margin: 2pt;
+		color: white;
+		background-color: transparent;
+		font-family: Cambria, "Hoefler Text", "Liberation Serif", Times, "Times New Roman", "serif";
+	}
+	#command{
+		display: none;
+		position: fixed;
+		top:13%;
+		left: 0%;
+	}
+	body{
+		background-image: url("http://whatfo.altervista.org/wp-content/uploads/2017/08/groundFull.jpg");
+	}
+	#footer {
+    position: fixed;
+    bottom: 2%;
+	left: 5%;
+    font: 8pt Lucida Sans;
+    line-height: 20pt;  
+	}
+	#connection,#sending,#state{
+		font-weight: 600;
+		border: hidden;
+		background: transparent;
+		color: white;
+		font-size: 8pt;
+	}
+}
+
+@media only screen and (max-width: 600px) {
+	#ExternalHome{
+		width: 11%;
+		position: absolute;
+		top: 65pt;
+		left: 23pt;
+		margin-right: 6pt;
+		display:none;
+	}
+	#ExternalForward,#ExternalBackward,#ExternalLeft,#ExternalRight,#ExternalStop{
+		width: 25%;
+	}
+	#ExternalForward,#ExternalBackward,#ExternalLeft,#ExternalRight,#ExternalStop,#takeControl,#releaseControl,#start,#alarm {
+		font-size: 160%;
+		margin: 2pt;
+		color: white;
+		background-color: transparent;
+		font-family: cursive;
+		font-stretch: condensed;
+		font-weight: 100;
+	}
+	#command{
+		display: none;
+		position: fixed;
+		top:20%;    
+	}
+	
+	body{
+		background-image: url("http://whatfo.altervista.org/wp-content/uploads/2017/08/groundMobile.jpg");
+	}
+	#footer {
+    position: fixed;
+    bottom: 2%;
+	left: 5%;
+   	font: 8pt Lucida Sans;
+    line-height: 20pt;  
+	}
+	#connection,#sending,#state{
+		font-weight: 600;
+		border: hidden;
+		background: transparent;
+		color: white;
+		font-size: 8pt;
+	}
+}
+
+
+
+#takeControl,#releaseControl,#start,#alarm{
+	border-radius: 0pt 0pt 0pt 0pt;
+	-moz-border-radius: 0pt 0pt 0pt 0pt;
+	-webkit-border-radius: 0pt 0pt 0pt 0pt;
+	border: 2.5pt solid #ffffff;
+}
+#takeControl:hover,#releaseControl:hover,#start:hover,#alarm:hover{
+	border-radius: 0pt 15pt 0pt 15pt;
+	-moz-border-radius: 0pt 15pt 0pt 15pt;
+	-webkit-border-radius: 0pt 15pt 0pt 15pt;
+	color: #009999;
+	transition-duration:1s;
+	border: 0.5pt solid #fff;
+	padding: 5pt;
+	background-color: #D2FF2D;
+	-webkit-box-shadow: 0px 0px 20px 2px #8AE78C;
+	-moz-box-shadow: 0px 0px 20x 2px #8AE78C;
+	box-shadow: 0px 0px 20px 2px #8AE78C;
+	
+}
+#takeControl,#releaseControl,#start,#alarm{
+	border-radius: 8pt 0pt 8pt 0pt;
+	-moz-border-radius: 8pt 0pt 8pt 0pt;
+	-webkit-border-radius: 8pt 0pt 8pt 0pt;
+	color: #ff6633;
+	border: 1.5pt solid #ff6633;
+	background-color: transparent;
+}
+
+body {
+    margin: 20pt;
+    line-height: 26pt;
+	color: white;
+	font-family: monospace;
+}
+
+#footerTerm {
+    float: left;
+	margin: 2pt;
+	background:transparent;
+}
+
+#top{
+    position: fixed;
+    top:3%;
+	left: 0%;
+}
+table {
+  table-layout: fixed;
+  width: 100%;
+}
+#releaseControl {
+	display: none;
+}
+#vuoto{
+	height: 0%;
+	width: 0%;
+}
