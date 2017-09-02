@@ -11,6 +11,7 @@ public class Rover extends AbstractRover {
 	private int da;
 	private int attemptRight;
 	private long startTimeForward;
+	private int duration;
 	
 	public Rover(String actorId, QActorContext myCtx, IOutputEnvView outEnvView ) throws Exception{
 		super(actorId,myCtx,outEnvView ,it.unibo.qactors.QActorUtils.robotBase );
@@ -66,6 +67,20 @@ public class Rover extends AbstractRover {
 		int durationTimeForward = (int) (endTimeForward - this.startTimeForward);
 		System.out.println("[ROVER] DurationTimeForward = "+durationTimeForward);
 		return durationTimeForward;
+	}
+	
+	public void saveStartGoHome(int duration) {
+		this.startTimeForward = new Date().getTime();
+		this.duration = duration;
+	}
+	
+	public int getRemainingTime() {
+		long endTimeForward = new Date().getTime();
+		int durationTimeForward = (int) (endTimeForward - this.startTimeForward);
+		System.out.println("[ROVER] DurationTimeForward = "+durationTimeForward);
+		int durationTimeRemaining = (int) (this.duration - durationTimeForward);
+		System.out.println("[ROVER] DurationTimeRemaining = "+durationTimeRemaining);
+		return durationTimeRemaining;
 	}
 	
 }

@@ -1,0 +1,494 @@
+RobotSystem rover_wall_e_sys
+                     
+Event usercmd : usercmd(robotgui(CMD)) 	//(FORWARD button) CMD w(low)
+Event local_start : start
+Event local_alarm : alarm
+Event local_takeControl : takeControl
+Event local_releaseControl : releaseControl
+Event local_ctrl : ctrl(CMD)
+Event local_goHome : goHome
+
+Event sonar : sonar(SONARID,TARGETNAME,DISTANCE) //EVENT ENVIRONMENT SONAR1&2
+Event local_sonar2Support : sonar2Support(TARGETNAME,DISTANCE)
+Event local_goal : goal
+
+Event sonarDetect : sonarDetect(DISTANCE)      
+Event noMoreObstacle : noMoreObstacle
+
+Dispatch daValue : daValue(DA)
+Dispatch fptValue : fptValue(FPT)
+Dispatch checkObstacleType : checkObstacleType
+
+
+Context  ctxRobot   ip [ host="localhost" 		port=8070 ] -httpserver
+Context  ctxSonar1  ip [ host="192.168.43.74"   port=8100 ]
+Context  ctxSonar2  ip [ host="192.168.43.254"  port=8090 ]   
+
+QActor sonar1 context ctxSonar1 {
+	
+	Rules {
+		testNear(Distance):-retract(actorOpDone(OP, Distance)), eval(lt, Distance, 200).
+	}
+	
+	Plan init normal
+			println("[SONAR1] STARTS");
+			actorOp startSonarProcess;
+			switchToPlan work;
+			println("[SONAR1] ENDS")
+			
+	Plan work 
+			delay time(50);
+			actorOp getDistanceFromSonar;
+			[ !? testNear(Distance) ] emit sonar:sonar(sonar1, wall_e, Distance);
+			repeatPlan
+	
+}
+ 
+QActor sonar2 context ctxSonar2 {
+	Rules {
+		testNear(Distance):-retract(actorOpDone(OP, Distance)), eval(lt, Distance, 200).
+	}
+	
+	Plan init normal
+			println("[SONAR2] STARTS");
+			actorOp startSonarProcess;
+			switchToPlan work;
+			println("[SONAR2] ENDS")
+			
+	Plan work 
+			delay time(50);
+			actorOp getDistanceFromSonar;
+			[ !? testNear(Distance) ] emit sonar:sonar(sonar2, wall_e, Distance);
+			repeatPlan
+}
+
+QActor sonarsupport context ctxRobot {
+	
+	Plan init normal
+			println("[SONAR_SUPPORT] STARTS");
+			switchToPlan configDa;
+			switchToPlan configFpt;
+			switchToPlan work;
+			println("[SONAR_SUPPORT] ENDS")
+			
+	Plan work
+			sense time(60000) sonar -> handleSonar;
+			repeatPlan
+			
+	Plan handleSonar
+//			onEvent sonar : sonar(sonar1, TN, D) -> switchToPlan handleSonar1;
+			onEvent sonar : sonar(sonar2, TN, D) -> switchToPlan handleSonar2;
+			resumeLastPlan
+	
+	Plan handleSonar2
+			onEvent sonar : sonar(sonar2, TN, D) -> emit local_sonar2Support : sonar2Support(TN, D);
+		 	[ !? finalPointTollerance(FPT) ] onEvent sonar : sonar(sonar2, TN, D) -> actorOp goalTest(D, FPT);
+		 	[ !? actorOpDone(OP, true) ] println("[SONAR_SUPPORT] emitting local_goal");
+   			[ ?? actorOpDone(OP, true) ] emit local_goal : goal;
+   			resumeLastPlan
+   	
+   	Plan configDa
+   			sense time(60000) sonar -> continue;
+   			onEvent sonar : sonar(sonar1, TN, D) -> addRule da(D);
+   			[ !? da(DA) ] println(daSettedAt(DA)) else repeatPlan;
+   			[ !? da(DA) ] actorOp setDa(DA);
+   			[ !? da(DA) ] forward rover -m daValue : daValue(DA);
+			resumeLastPlan
+	
+	Plan configFpt
+			receiveMsg time(60000);
+			onMsg fptValue : fptValue(FPT) -> addRule finalPointTollerance(FPT);
+			resumeLastPlan
+			
+	Plan prologConsultFail
+			println("[SONAR_SUPPORT] Unable to consult configurations.pl")
+} 
+
+QActor obstaclesupport context ctxRobot {
+	
+	Plan init normal 
+			println("[OBSTACLE_SUPPORT] STARTS");
+			switchToPlan work;
+			println("[OBSTACLE_SUPPORT] ENDS")
+			
+	Plan work
+			println("[OBSTACLE_SUPPORT] Plan work.");
+			receiveMsg time(60000);
+			onMsg checkObstacleType : checkObstacleType -> switchToPlan handleObstacle;
+			repeatPlan
+			
+	Plan handleObstacle
+			println("[OBSTACLE_SUPPORT] Handling the obstacle.");
+			sense time (500) sonarDetect -> continue;
+			onEvent sonarDetect : sonarDetect(D) -> repeatPlan else emit noMoreObstacle : noMoreObstacle;
+			resumeLastPlan
+	
+}
+
+QActor usercmdsupport context ctxRobot {
+	
+	Plan init normal
+			println("[USERCMD_SUPPORT] STARTS");
+			switchToPlan work;
+			println("[USERCMD_SUPPORT] ENDS")
+			
+	Plan work
+			sense time(60000) usercmd -> handleUserCmd;
+			repeatPlan
+			
+	Plan handleUserCmd
+			onEvent usercmd : usercmd(robotgui(start))			-> emit local_start : start;
+			onEvent usercmd : usercmd(robotgui(alarm))		 	-> emit local_alarm : alarm;
+			onEvent usercmd : usercmd(robotgui(takecontrol)) 	-> emit local_takeControl : takeControl;
+			onEvent usercmd : usercmd(robotgui(fwd))		 	-> emit local_ctrl : ctrl(fwd); 	
+			onEvent usercmd : usercmd(robotgui(bwd))		 	-> emit local_ctrl : ctrl(bwd);
+			onEvent usercmd : usercmd(robotgui(lft))		 	-> emit local_ctrl : ctrl(lft);
+			onEvent usercmd : usercmd(robotgui(rgt))		 	-> emit local_ctrl : ctrl(rgt);
+			onEvent usercmd : usercmd(robotgui(stp))		 	-> emit local_ctrl : ctrl(stp); 		
+			onEvent usercmd : usercmd(robotgui(releasecontrol))	-> emit local_releaseControl : releaseControl;
+			onEvent usercmd : usercmd(robotgui(gohome))			-> emit local_goHome : goHome; 			
+			resumeLastPlan
+}
+
+Robot wall_e QActor rover context ctxRobot {
+   	
+	Plan init normal
+			println("------------------PLAN INIT------------------");
+ 			println("[ROVER] STARTS");           
+  			//---------UNITY----------
+  			//Metodo 1 unity
+  			//actorOp workWithUnity("127.0.0.1");//connects to port 6000 192.168.43.229"
+			//Metodo 2 unity
+//			actorOp initUnityConnection("127.0.0.1");
+//			actorOp createRobotUnity;
+			//---------UNITY----------
+			switchToPlan config;
+//			switchToPlan turnRight90;
+      		switchToPlan standby;  
+			delay time(6000000); 
+   			println("[ROVER] ENDS")                      
+
+	Plan config
+			println("------------------PLAN CONFIG------------------");
+			//Waiting for DA
+			receiveMsg time(10000);
+			onMsg daValue : daValue(DA) -> addRule da(DA);
+			onMsg daValue : daValue(DA) -> actorOp setDa(DA);
+			[ !? da(DA) ] println(daSettedAt(DA)) else repeatPlan;
+			actorOp setAttemptRight(0);
+			//demo consult("./userPrologTheory.pl") onFailSwitchTo prologConsultFail;
+			[ !? rotationSpeedRight(RSR) ] 		println(rotationSpeedRight(RSR));
+			[ !? rotationSpeedLeft(RSL) ] 		println(rotationSpeedLeft(RSL));
+			[ !? forwardSpeed(FS) ] 			println(forwardSpeed(FS));
+			[ !? rotationTimeRight(RTR) ] 		println(rotationTimeRight(RTR));
+			[ !? rotationTimeLeft(RTL) ] 		println(rotationTimeLeft(RTL));
+			[ !? searchTimeForward(STF) ] 		println(searchTimeForward(STF));
+			[ !? senseTimeFixedObstacle(STFO) ] println(senseTimeFixedObstacle(STFO));
+			[ !? finalPointTollerance(FPT) ] 	println(finalPointTollerance(FPT));
+			[ !? finalPointTollerance(FPT) ] 	forward sonarsupport -m fptValue : fptValue(FPT);
+			resumeLastPlan
+			
+	Plan standby
+			println("------------------PLAN STANDBY------------------");		  
+			sense time (10000) local_start-> handleStart;
+			repeatPlan 
+
+	Plan handleStart
+			println("------------------PLAN HANDLE START------------------");
+   			switchToPlan reachB
+   			
+   	Plan reachB
+			println("------------------PLAN REACHB------------------");
+   			switchToPlan goForward
+   			
+   	Plan handleTakeControl
+			println("------------------PLAN HANDLE TAKE CONTROL------------------");
+			[ ?? goingForward ] switchToPlan saveForwardPath;
+			[ ?? goingForwardHome ] switchToPlan saveRemainingTime;
+   			robotStop speed(0) time(0);
+   			switchToPlan controlTaken
+   			
+   	Plan controlTaken
+			println("------------------PLAN CONTROL TAKEN------------------");
+   			sense time (10000) local_ctrl, local_releaseControl -> controlWork, handleReleaseControl 
+   							react event local_goHome	-> handleGoHome; 
+   			repeatPlan
+   	
+   	Plan controlWork
+			println("------------------PLAN CONTROL WORK------------------");
+			[ ?? goingHome ] println("[ROVER] goingHome Rule Deleted!");
+			[ ?? goingForward ] switchToPlan saveForwardPath;
+   			onEvent local_ctrl : ctrl(fwd) -> switchToPlan ctrlForward;
+   			onEvent local_ctrl : ctrl(bwd) -> switchToPlan ctrlBackward;
+   			onEvent local_ctrl : ctrl(lft) -> switchToPlan turnLeft90;
+   			onEvent local_ctrl : ctrl(rgt) -> switchToPlan turnRight90;
+   			onEvent local_ctrl : ctrl(stp) -> switchToPlan ctrlStop;
+   			switchToPlan controlTaken
+   			
+   	Plan handleReleaseControl
+			println("------------------PLAN HANDLE RELEASE CONTROL------------------");
+			[ ?? goingForward ] switchToPlan saveForwardPath;
+   			robotStop speed(0) time(0);
+   			switchToPlan controlReleasedStandby
+   			
+   	Plan controlReleasedStandby
+			println("------------------PLAN CONTROL RELEASED STANDBY------------------");
+   			println("[ROVER] Standby[control already taken at least once].");
+   			sense time(60000) local_takeControl -> handleTakeControl;
+   			repeatPlan
+   			
+   	Plan ctrlForward
+			println("------------------PLAN CTRL FORWARD------------------");
+			actorOp saveStart;
+			addRule goingForward;
+   			[ !? forwardSpeed(FS) ] robotForward speed(FS) time(60000) react event sonarDetect 				-> ctrlStop
+	   																   or 	  event local_alarm 			-> handleAlarmTaken
+	   																   or	  event local_releaseControl	-> handleReleaseControl
+	   																   or	  event local_ctrl				-> controlWork;
+			[ ?? goingForward ] switchToPlan saveForwardPath;
+			repeatPlan
+
+	Plan saveForwardPath
+			println("------------------PLAN SAVE PATH------------------");
+			actorOp getDurationTime;
+			[ !? saveMove(fwd) ] resumeLastPlan
+
+	Plan ctrlStop
+			println("------------------PLAN CTRL STOP------------------");
+			[ ?? goingForward ] switchToPlan saveForwardPath;
+			robotStop speed(0) time(0); 
+			switchToPlan controlTaken
+			
+   	Plan ctrlBackward
+			println("------------------PLAN CTRL BACKWARD------------------");
+   			switchToPlan turnRight90;
+   			switchToPlan turnRight90;
+   			switchToPlan ctrlForward
+
+	
+	Plan handleAlarm
+			println("------------------PLAN HANDLE ALLARM------------------");
+			[ ?? goingForward ] switchToPlan saveForwardPath;
+			robotStop speed(0) time(0);
+			[ ?? noAlarmFDR ] actorOp decAttemptRight;
+			sense time (600000) local_start, local_takeControl-> continue, handleTakeControl;
+			onEvent local_start : start -> resumeLastPlan;
+			resumeLastPlan				// torni da dove sei venuto, non è una soluzione ottimale ma passati i 60 secondi si
+										// rende necessaria in quanto con una repeatPlan non sarebbe più possibile tornare a start
+										// mentre senza niente il programma sarebbe terminato.
+			
+	Plan handleAlarmTaken
+			println("------------------PLAN HANDLE ALLARM TAKEN------------------");
+			[ ?? goingForward ] switchToPlan saveForwardPath;
+			robotStop speed(0) time(0); 
+			switchToPlan controlTaken
+			
+	Plan handleAlarmReleased
+			println("------------------PLAN HANDLE ALLARM RELEASED------------------");
+			[ ?? goingForwardHome ] switchToPlan saveRemainingTime;
+			robotStop speed(0) time(0); 
+			switchToPlan controlReleasedStandby
+   	
+   	Plan saveRemainingTime
+   			println("------------------PLAN SAVE REMAINING TIME------------------");
+   			[ !? deleteLastMove(MOVE) ] println(lastMoveDeleted(MOVE));
+   			actorOp getRemainingTime;
+			[ !? saveMove(fwd) ] resumeLastPlan
+   			 
+   	Plan handleGoHome
+   			println("------------------PLAN HANDLE GO HOME------------------");
+   			[ !? path(L) ] println(myPathList(L));
+   			[ !? goingHome ] switchToPlan goHome;
+   			[ !? rotationRightValues(S, T) ] robotRight speed(S) time(T);
+   			delay time(500);
+   			[ !? rotationRightValues(S, T) ] robotRight speed(S) time(T);
+   			addRule goingHome;
+   			switchToPlan goHome
+   			 
+   	Plan goHome
+   			println("------------------PLAN GO HOME------------------");
+   			[ !? isNextMove(fwd, S, T) ] switchToPlan goForwardHome;
+			[ !? isNextMove(lft, S, T) ] robotRight speed(S) time(T);
+   			[ !? isNextMove(rgt, S, T) ] robotLeft speed(S) time(T);   			
+   			[ !? deleteLastMove(MOVE) ] println(lastMoveDeleted(MOVE));
+   			[ !? pathEmpty ] switchToPlan homeReached else repeatPlan
+   			
+   	Plan goForwardHome
+		   	println("------------------PLAN GO FORWARD HOME------------------");
+   			[ !? isNextMove(fwd, S, T) ] actorOp saveStartGoHome(T);
+			addRule goingForwardHome;
+   			[ !? isNextMove(fwd, S, T) ] robotForward speed(S) time(T) react event local_alarm 			-> handleAlarmReleased
+   							  			  							   or    event local_takeControl 	-> handleTakeControl
+   							  			  							   or    event sonarDetect 			-> handleObstacleGoHome;
+			[ ?? goingForwardHome ] println("[ROVER] going forward home deleted");
+			resumeLastPlan
+   	
+   	Plan handleObstacleGoHome
+			println("------------------PLAN HANDLE OBSTACLE GO HOME------------------");
+   			robotStop speed(0) time(0);
+   			[ ?? goingForwardHome ] switchToPlan saveRemainingTime;
+   			forward obstaclesupport -m checkObstacleType : checkObstacleType ;
+   			[ !? senseTimeFixedObstacle(T) ] sense time (T) noMoreObstacle -> goHome
+   										react event local_takeControl -> handleTakeControl;
+   			println("[ROVER] found unexpected fixed obstacle during go home.");
+   			switchToPlan controlReleasedStandby
+   			  	
+   	Plan homeReached
+   			println("------------------PLAN HOME REACHED------------------");
+   			[ ?? goLeft ] println("[ROVER] goLeft Rule Deleted!");
+   			[ !? rotationRightValues(S, T) ] robotRight speed(S) time(T);
+   			[ !? rotationRightValues(S, T) ] robotRight speed(S) time(T);
+   			[ ?? goingHome ] println("[ROVER] goingHome Rule Deleted!");
+   			switchToPlan standby
+   			 
+	Plan goForward
+			println("------------------PLAN GO FORWARD------------------");
+			actorOp saveStart;
+			addRule goingForward;
+   			[ !? forwardSpeed(FS) ] robotForward speed(FS) time(60000) react event local_sonar2Support	-> handleSonar2Support 
+	   																   or    event sonarDetect 			-> handleObstacle
+	   																   or 	 event local_alarm 			-> handleAlarm
+	   																   or	 event local_takeControl 	-> handleTakeControl;
+			[ ?? goingForward ] switchToPlan saveForwardPath;
+			repeatPlan
+	   											
+	Plan handleSonar2Support
+			println("------------------PLAN HANDLE SONAR2 SUPPORT------------------");
+			[ ?? goingForward ] switchToPlan saveForwardPath;
+   			[ ?? goLeft ] println("[ROVER] goLeft Rule Deleted!");
+   			onEvent local_sonar2Support : sonar2Support(TN, D) -> robotStop speed(0) time(0);
+   			onEvent local_sonar2Support : sonar2Support(TN, D) -> switchToPlan goalLine;
+   			resumeLastPlan
+   			
+   	Plan goalLine
+			println("------------------PLAN GOAL LINE------------------");
+   			println("[ROVER] I'm on the GoalLine.");
+   			[ !? finalPointTollerance(FPT) ] onEvent local_sonar2Support : sonar2Support(TN, D) -> actorOp chooseDirection(D, FPT);
+   			[ ?? actorOpDone(OP, 0) ] switchToPlan handleGoal;
+   			[ ?? actorOpDone(OP, 1) ] switchToPlan turnRight90;
+   			[ ?? actorOpDone(OP, 2) ] switchToPlan turnLeft90;
+   			switchToPlan reachFinalPosition
+   	
+   	Plan reachFinalPosition
+			println("------------------PLAN RECH FINAL POSITION------------------");
+			actorOp saveStart;
+			addRule goingForward;
+   			[ !? forwardSpeed(FS) ] robotForward speed(FS) time(20000) react event local_goal 		 -> handleGoal 
+   																	   or 	 event local_alarm 		 -> handleAlarm
+   																	   or	 event local_takeControl -> handleTakeControl;
+   			[ ?? goingForward ] switchToPlan saveForwardPath;
+   			repeatPlan
+   			
+   	Plan handleGoal
+			println("------------------PLAN HANDLE GOAL------------------");
+			[ ?? goingForward ] switchToPlan saveForwardPath;
+   			println("[ROVER] point B reached!!");
+   			switchToPlan goalStandby
+   			
+   	Plan goalStandby
+   			println("------------------PLAN GOAL STANDBY------------------");
+   			sense time(60000) local_takeControl -> handleTakeControl;
+   			repeatPlan
+   			
+   	Plan handleObstacle
+			println("------------------PLAN HANDLE OBSTACLE------------------");
+			[ ?? goingForward ] switchToPlan saveForwardPath;
+   			robotStop speed(0) time(0);
+   			forward obstaclesupport -m checkObstacleType : checkObstacleType ;
+   			switchToPlan typeOfObstacle
+   			
+   	Plan typeOfObstacle
+			println("------------------PLAN TYPE OF OBSTACLE------------------");
+   			[ !? senseTimeFixedObstacle(T) ] sense time (T) noMoreObstacle -> mobileObstacle 
+   										react event local_takeControl -> handleTakeControl;
+   			switchToPlan fixedObstacle
+   			
+   	Plan mobileObstacle
+			println("------------------PLAN MOBILE OBSTACLE------------------");
+   			switchToPlan goForward	
+   			
+   	Plan turnRight90
+			println("------------------PLAN TURN RIGHT 90------------------");
+   			[ !? rotationRightValues(S, T) ] robotRight speed(S) time(T);
+   			[ !? saveMove(rgt) ] resumeLastPlan;
+   			resumeLastPlan
+   			
+   	Plan turnLeft90
+			println("------------------PLAN TURN LEFT 90------------------");
+   			[ !? rotationLeftValues(S, T) ] robotLeft speed(S) time(T);
+   			[ !? saveMove(lft) ] resumeLastPlan;
+   			resumeLastPlan
+   			
+   	Plan fixedObstacle
+			println("------------------PLAN FIXED OBSTACLE------------------");
+   			[ !? goLeft ] switchToPlan findTheDoorLeft;
+	   		switchToPlan findTheDoorRight
+	   		
+   	Plan findTheDoorRight
+   			println("------------------PLAN FIND THE DOOR RIGHT------------------");
+   			[ !? noAlarmFDR ] println("[ROVER] noAlarmFDR already present.") else addRule noAlarmFDR;
+   			actorOp incAttemptRight;
+   			switchToPlan turnRight90;
+   			actorOp saveStart;
+			addRule goingForward;
+   			[ !? searchForwardValues(S, T) ] robotForward speed(S) time(T) react event sonarDetect 			-> deadEndRight 
+   																		   or 	 event local_alarm 			-> handleAlarm
+   																		   or	 event local_takeControl 	-> handleTakeControl;
+			[ ?? goingForward ] switchToPlan saveForwardPath;
+   			switchToPlan turnLeft90;
+   			sense time (500) sonarDetect -> handleObstacle;
+   			switchToPlan goForward
+   			
+   	Plan findTheDoorLeft
+   			println("------------------PLAN FIND THE DOOR LEFT------------------");
+   	   		switchToPlan turnLeft90;
+   	   		actorOp saveStart;
+			addRule goingForward;
+   			[ !? searchForwardValues(S, T) ] robotForward speed(S) time(T) react event sonarDetect 		-> deadEndLeft
+   																		or	  event local_alarm 		-> handleAlarm
+   																		or	  event local_takeControl 	-> handleTakeControl;
+			[ ?? goingForward ] switchToPlan saveForwardPath;
+   			switchToPlan turnRight90;
+   			sense time (500) sonarDetect -> handleObstacle;
+   			switchToPlan goForward
+   			
+   	Plan deadEndRight
+ 			println("------------------PLAN DEADEND RIGHT------------------");
+ 			[ ?? goingForward ] switchToPlan saveForwardPath;
+   			addRule goLeft;
+   			switchToPlan turnLeft90;
+   			delay time(500) react event local_alarm -> handleAlarm
+   							or	   event local_takeControl -> handleTakeControl;
+   			switchToPlan turnLeft90;
+   			[ !? searchTimeForward(STF) ] actorOp getAttemptRightTotalTime(STF);
+   			[ !? actorOpDone(OP, ARTT) ] println(attemptRightTotalTime(ARTT));
+   			actorOp saveStart;
+			addRule goingForward;
+			[ !? deadEndForwardValues(S, T) ] println(deadEndForwardValues(S, T));
+   			[ !? deadEndForwardValues(S, T) ] robotForward speed(S) time(T) react event local_alarm 		-> handleAlarm
+   																			or	  event local_takeControl 	-> handleTakeControl;
+   			[ ?? goingForward ] switchToPlan saveForwardPath;
+   			switchToPlan turnRight90;
+   			delay time(1000);
+   			switchToPlan handleObstacle
+   			
+   	Plan deadEndLeft
+ 			println("------------------PLAN DEADEND LEFT------------------");
+ 			[ ?? goingForward ] switchToPlan saveForwardPath;
+   			println("[ROVER] cannot find a door. Terminate.");
+   			actorOp setAttemptRight(0);
+   			[ ?? goLeft ] println("[ROVER] goLeft Rule Deleted!");
+   			switchToPlan hilariousEnd;
+   			actorOp exit
+   			
+   	Plan hilariousEnd
+ 			println("------------------PLAN HILARIOUS END------------------");
+   			switchToPlan turnRight90;
+   			switchToPlan turnLeft90;
+   			switchToPlan turnLeft90;
+   			switchToPlan turnRight90;
+   			switchToPlan turnRight90;
+   			switchToPlan turnLeft90;
+   			resumeLastPlan
+   					   			 			
+}

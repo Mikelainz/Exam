@@ -112,11 +112,13 @@ QActor obstaclesupport context ctxRobot {
 			println("[OBSTACLE_SUPPORT] ENDS")
 			
 	Plan work
+			println("[OBSTACLE_SUPPORT] Plan work.");
 			receiveMsg time(60000);
 			onMsg checkObstacleType : checkObstacleType -> switchToPlan handleObstacle;
 			repeatPlan
 			
 	Plan handleObstacle
+			println("[OBSTACLE_SUPPORT] Handling the obstacle.");
 			sense time (500) sonarDetect -> continue;
 			onEvent sonarDetect : sonarDetect(D) -> repeatPlan else emit noMoreObstacle : noMoreObstacle;
 			resumeLastPlan
@@ -175,15 +177,15 @@ Robot mocksimple QActor rover context ctxRobot {
 			[ !? da(DA) ] println(daSettedAt(DA)) else repeatPlan;
 			actorOp setAttemptRight(0);
 			//demo consult("./userPrologTheory.pl") onFailSwitchTo prologConsultFail;
-			[ !? rotationSpeedRight(RSR) ] println(rotationSpeedRight(RSR));
-			[ !? rotationSpeedLeft(RSL) ] println(rotationSpeedLeft(RSL));
-			[ !? forwardSpeed(FS) ] println(forwardSpeed(FS));
-			[ !? rotationTimeRight(RTR) ] println(rotationTimeRight(RTR));
-			[ !? rotationTimeLeft(RTL) ] println(rotationTimeLeft(RTL));
-			[ !? searchTimeForward(STF) ] println(searchTimeForward(STF));
+			[ !? rotationSpeedRight(RSR) ] 		println(rotationSpeedRight(RSR));
+			[ !? rotationSpeedLeft(RSL) ] 		println(rotationSpeedLeft(RSL));
+			[ !? forwardSpeed(FS) ] 			println(forwardSpeed(FS));
+			[ !? rotationTimeRight(RTR) ] 		println(rotationTimeRight(RTR));
+			[ !? rotationTimeLeft(RTL) ] 		println(rotationTimeLeft(RTL));
+			[ !? searchTimeForward(STF) ] 		println(searchTimeForward(STF));
 			[ !? senseTimeFixedObstacle(STFO) ] println(senseTimeFixedObstacle(STFO));
-			[ !? finalPointTollerance(FPT) ] println(finalPointTollerance(FPT));
-			[ !? finalPointTollerance(FPT) ] forward sonarsupport -m fptValue : fptValue(FPT);
+			[ !? finalPointTollerance(FPT) ] 	println(finalPointTollerance(FPT));
+			[ !? finalPointTollerance(FPT) ] 	forward sonarsupport -m fptValue : fptValue(FPT);
 			resumeLastPlan
 			
 	Plan standby
@@ -202,6 +204,7 @@ Robot mocksimple QActor rover context ctxRobot {
    	Plan handleTakeControl
 			println("------------------PLAN HANDLE TAKE CONTROL------------------");
 			[ ?? goingForward ] switchToPlan saveForwardPath;
+			[ ?? goingForwardHome ] switchToPlan saveRemainingTime;
    			robotStop speed(0) time(0);
    			switchToPlan controlTaken
    			
@@ -213,6 +216,7 @@ Robot mocksimple QActor rover context ctxRobot {
    	
    	Plan controlWork
 			println("------------------PLAN CONTROL WORK------------------");
+			[ ?? goingHome ] println("[ROVER] goingHome Rule Deleted!");
 			[ ?? goingForward ] switchToPlan saveForwardPath;
    			onEvent local_ctrl : ctrl(fwd) -> switchToPlan ctrlForward;
    			onEvent local_ctrl : ctrl(bwd) -> switchToPlan ctrlBackward;
@@ -237,10 +241,10 @@ Robot mocksimple QActor rover context ctxRobot {
 			println("------------------PLAN CTRL FORWARD------------------");
 			actorOp saveStart;
 			addRule goingForward;
-   			[ !? forwardSpeed(FS) ] robotForward speed(FS) time(60000) react event sonarDetect 			-> ctrlStop
-	   											or 	  event local_alarm 			-> handleAlarmTaken
-	   											or	  event local_releaseControl	-> handleReleaseControl
-	   											or	  event local_ctrl				-> controlWork;
+   			[ !? forwardSpeed(FS) ] robotForward speed(FS) time(60000) react event sonarDetect 				-> ctrlStop
+	   																   or 	  event local_alarm 			-> handleAlarmTaken
+	   																   or	  event local_releaseControl	-> handleReleaseControl
+	   																   or	  event local_ctrl				-> controlWork;
 			[ ?? goingForward ] switchToPlan saveForwardPath;
 			repeatPlan
 
@@ -281,46 +285,69 @@ Robot mocksimple QActor rover context ctxRobot {
 			
 	Plan handleAlarmReleased
 			println("------------------PLAN HANDLE ALLARM RELEASED------------------");
+			[ ?? goingForwardHome ] switchToPlan saveRemainingTime;
 			robotStop speed(0) time(0); 
 			switchToPlan controlReleasedStandby
-	
-	Plan handleAlarmGoHome
-			println("------------------PLAN HANDLE ALARM GO HOME------------------");
-			robotStop speed(0) time(0);
-			switchToPlan controlTaken
+   	
+   	Plan saveRemainingTime
+   			println("------------------PLAN SAVE REMAINING TIME------------------");
+   			[ !? deleteLastMove(MOVE) ] println(lastMoveDeleted(MOVE));
+   			actorOp getRemainingTime;
+			[ !? saveMove(fwd) ] resumeLastPlan
    			 
    	Plan handleGoHome
    			println("------------------PLAN HANDLE GO HOME------------------");
-   			[ !? path(L) ] println(myPathList(L));
+   			[ !? clearPath(L) ] println(myPathList(L));
+   			[ !? goingHome ] switchToPlan goHome;
    			[ !? rotationRightValues(S, T) ] robotRight speed(S) time(T);
    			delay time(500);
    			[ !? rotationRightValues(S, T) ] robotRight speed(S) time(T);
+   			addRule goingHome;
    			switchToPlan goHome
    			 
    	Plan goHome
    			println("------------------PLAN GO HOME------------------");
-   			[ !? nextMove(lft, S, T) ] robotRight speed(S) time(T);
-   			[ !? nextMove(rgt, S, T) ] robotLeft speed(S) time(T);
-   			[ !? nextMove(fwd, S, T) ] robotForward speed(S) time(T) react event local_alarm -> handleAlarmGoHome
-   							  							 				or    event local_takeControl -> handleTakeControl;
+   			[ !? isNextMove(fwd, S, T) ] switchToPlan goForwardHome;
+			[ !? isNextMove(lft, S, T) ] robotRight speed(S) time(T);
+   			[ !? isNextMove(rgt, S, T) ] robotLeft speed(S) time(T);   			
+   			[ !? deleteLastMove(MOVE) ] println(lastMoveDeleted(MOVE));
    			[ !? pathEmpty ] switchToPlan homeReached else repeatPlan
    			
+   	Plan goForwardHome
+		   	println("------------------PLAN GO FORWARD HOME------------------");
+   			[ !? isNextMove(fwd, S, T) ] actorOp saveStartGoHome(T);
+			addRule goingForwardHome;
+   			[ !? isNextMove(fwd, S, T) ] robotForward speed(S) time(T) react event local_alarm 			-> handleAlarmReleased
+   							  			  							   or    event local_takeControl 	-> handleTakeControl
+   							  			  							   or    event sonarDetect 			-> handleObstacleGoHome;
+			[ ?? goingForwardHome ] println("[ROVER] going forward home deleted");
+			resumeLastPlan
    	
+   	Plan handleObstacleGoHome
+			println("------------------PLAN HANDLE OBSTACLE GO HOME------------------");
+   			robotStop speed(0) time(0);
+   			[ ?? goingForwardHome ] switchToPlan saveRemainingTime;
+   			forward obstaclesupport -m checkObstacleType : checkObstacleType ;
+   			[ !? senseTimeFixedObstacle(T) ] sense time (T) noMoreObstacle -> goHome
+   										react event local_takeControl -> handleTakeControl;
+   			switchToPlan goHome
+   			  	
    	Plan homeReached
    			println("------------------PLAN HOME REACHED------------------");
    			[ ?? goLeft ] println("[ROVER] goLeft Rule Deleted!");
    			[ !? rotationRightValues(S, T) ] robotRight speed(S) time(T);
    			[ !? rotationRightValues(S, T) ] robotRight speed(S) time(T);
+   			[ ?? goingHome ] println("[ROVER] goingHome Rule Deleted!");
    			switchToPlan standby
    			 
 	Plan goForward
 			println("------------------PLAN GO FORWARD------------------");
 			actorOp saveStart;
 			addRule goingForward;
-   			[ !? forwardSpeed(FS) ] robotForward speed(FS) time(60000) react event local_sonar2Support -> handleSonar2Support 
-	   											or    event sonarDetect 		-> handleObstacle
-	   											or 	  event local_alarm 		-> handleAlarm
-	   											or	  event local_takeControl 	-> handleTakeControl;
+   			[ !? forwardSpeed(FS) ] robotForward speed(FS) time(60000) react event local_sonar2Support	-> handleSonar2Support 
+	   																   or    event sonarDetect 			-> handleObstacle
+	   																   or 	 event local_alarm 			-> handleAlarm
+	   																   or	 event local_takeControl 	-> handleTakeControl;
 			[ ?? goingForward ] switchToPlan saveForwardPath;
 			repeatPlan
 	   											
@@ -345,9 +372,9 @@ Robot mocksimple QActor rover context ctxRobot {
 			println("------------------PLAN RECH FINAL POSITION------------------");
 			actorOp saveStart;
 			addRule goingForward;
-   			[ !? forwardSpeed(FS) ] robotForward speed(FS) time(20000) react event local_goal 			-> handleGoal 
-   												or 	  event local_alarm 		-> handleAlarm
-   												or	  event local_takeControl 	-> handleTakeControl;
+   			[ !? forwardSpeed(FS) ] robotForward speed(FS) time(20000) react event local_goal 		 -> handleGoal 
+   																	   or 	 event local_alarm 		 -> handleAlarm
+   																	   or	 event local_takeControl -> handleTakeControl;
    			[ ?? goingForward ] switchToPlan saveForwardPath;
    			repeatPlan
    			
@@ -372,7 +399,7 @@ Robot mocksimple QActor rover context ctxRobot {
    	Plan typeOfObstacle
 			println("------------------PLAN TYPE OF OBSTACLE------------------");
    			[ !? senseTimeFixedObstacle(T) ] sense time (T) noMoreObstacle -> mobileObstacle 
-   												react event local_takeControl -> handleTakeControl;
+   										react event local_takeControl -> handleTakeControl;
    			switchToPlan fixedObstacle
    			
    	Plan mobileObstacle
@@ -403,9 +430,9 @@ Robot mocksimple QActor rover context ctxRobot {
    			switchToPlan turnRight90;
    			actorOp saveStart;
 			addRule goingForward;
-   			[ !? searchForwardValues(S, T) ] robotForward speed(S) time(T) react event sonarDetect 		-> deadEndRight 
-   																		or 	  event local_alarm 		-> handleAlarm
-   																		or	  event local_takeControl 	-> handleTakeControl;
+   			[ !? searchForwardValues(S, T) ] robotForward speed(S) time(T) react event sonarDetect 			-> deadEndRight 
+   																		   or 	 event local_alarm 			-> handleAlarm
+   																		   or	 event local_takeControl 	-> handleTakeControl;
 			[ ?? goingForward ] switchToPlan saveForwardPath;
    			switchToPlan turnLeft90;
    			sense time (500) sonarDetect -> handleObstacle;
@@ -433,10 +460,12 @@ Robot mocksimple QActor rover context ctxRobot {
    							or	   event local_takeControl -> handleTakeControl;
    			switchToPlan turnLeft90;
    			[ !? searchTimeForward(STF) ] actorOp getAttemptRightTotalTime(STF);
+   			[ !? actorOpDone(OP, ARTT) ] addRule attemptRightTotalTime(ARTT);
    			actorOp saveStart;
 			addRule goingForward;
    			[ !? deadEndForwardValues(S, T) ] robotForward speed(S) time(T) react event local_alarm 		-> handleAlarm
    																			or	  event local_takeControl 	-> handleTakeControl;
+   			[ ?? goingForward ] switchToPlan saveForwardPath;
    			switchToPlan turnRight90;
    			delay time(1000);
    			switchToPlan handleObstacle
