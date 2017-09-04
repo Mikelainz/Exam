@@ -1,0 +1,5 @@
+/bin/
+/hardwareConfiguration.properties
+/build_ctxRobot.gradle
+/build_ctxSonar1.gradle
+/build_ctxSonar2.gradle
